@@ -60,6 +60,44 @@ exports.rejectHotel = async (req, res) => {
     }
 };
 
+// Update Hotel Hygiene Rating
+exports.updateHotelRating = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { hygiene_score, hygiene_status, memo, fine_amount } = req.body;
+
+        const hotel = await Hotel.findByPk(id);
+        if (!hotel) return res.status(404).json({ message: 'Hotel not found' });
+
+        // Update fields
+        if (hygiene_score !== undefined) {
+            if (hygiene_score < 0 || hygiene_score > 100) {
+                return res.status(400).json({ message: 'Hygiene score must be between 0 and 100' });
+            }
+            hotel.hygiene_score = hygiene_score;
+        }
+
+        if (hygiene_status) {
+            hotel.hygiene_status = hygiene_status;
+        }
+
+        if (memo !== undefined) {
+            hotel.memo = memo;
+        }
+
+        if (fine_amount !== undefined) {
+            hotel.fine_amount = fine_amount;
+        }
+
+        hotel.last_inspection_date = new Date();
+        await hotel.save();
+
+        res.json({ message: 'Hotel rating updated successfully', hotel });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 exports.issueFine = async (req, res) => {
     try {
         const { hotel_id, amount, reason } = req.body;

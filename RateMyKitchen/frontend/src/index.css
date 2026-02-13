@@ -63,6 +63,31 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%233b82f6" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>') 12 12, auto;
+}
+
+/* Custom cursor for interactive elements */
+a,
+button,
+.btn,
+.achievement-card,
+[role="button"] {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="%2314b8a6" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><circle cx="11" cy="11" r="3" fill="%2314b8a6" opacity="0.3"/></svg>') 14 14, pointer !important;
+}
+
+/* Cursor pulse animation on hover */
+@keyframes cursorPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
 }
 
 /* Animated Background Pattern */

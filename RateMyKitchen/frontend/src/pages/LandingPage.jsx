@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import CursorTrail from '../components/CursorTrail';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import HeroImage from '../assets/hero-image.png';
 
@@ -19,8 +20,10 @@ const LandingPage = () => {
     const [loading, setLoading] = useState(true);
     const [heroTextVisible, setHeroTextVisible] = useState(false);
     const [achievementSectionVisible, setAchievementSectionVisible] = useState(false);
+    const [achievementCardsVisible, setAchievementCardsVisible] = useState([]);
     const heroTextRef = React.useRef(null);
     const achievementSectionRef = React.useRef(null);
+    const achievementCardRefs = React.useRef([]);
 
     // Fetch achievements and stats from API
     useEffect(() => {
@@ -36,14 +39,18 @@ const LandingPage = () => {
 
                 setAchievements(achievementsData);
                 setStats(statsData);
+                // Initialize visibility state based on actual achievements length
+                setAchievementCardsVisible(new Array(achievementsData.length).fill(false));
             } catch (error) {
                 console.error('Error fetching data:', error);
                 // Use fallback data if API fails
-                setAchievements([
+                const fallbackAchievements = [
                     { title: 'Grade A Certification', description: 'Awarded for exceptional hygiene standards', icon: 'certificate' },
                     { title: 'Excellence Award 2024', description: 'Best kitchen hygiene practices', icon: 'trophy' },
                     { title: '100% Compliance', description: 'Perfect health inspection record', icon: 'award' }
-                ]);
+                ];
+                setAchievements(fallbackAchievements);
+                setAchievementCardsVisible(new Array(fallbackAchievements.length).fill(false));
             } finally {
                 setLoading(false);
             }
@@ -77,14 +84,41 @@ const LandingPage = () => {
             });
         }, observerOptions);
 
+        // Card observers with higher threshold for better visibility
+        const cardObserverOptions = {
+            threshold: 0.3,
+            rootMargin: '0px'
+        };
+
+        const cardObservers = achievementCardRefs.current.map((ref, idx) => {
+            return new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        setAchievementCardsVisible(prev => {
+                            const newState = [...prev];
+                            newState[idx] = true;
+                            return newState;
+                        });
+                    }
+                });
+            }, cardObserverOptions);
+        });
+
         if (heroTextRef.current) heroObserver.observe(heroTextRef.current);
         if (achievementSectionRef.current) achievementObserver.observe(achievementSectionRef.current);
+
+        achievementCardRefs.current.forEach((ref, idx) => {
+            if (ref && cardObservers[idx]) cardObservers[idx].observe(ref);
+        });
 
         return () => {
             if (heroTextRef.current) heroObserver.unobserve(heroTextRef.current);
             if (achievementSectionRef.current) achievementObserver.unobserve(achievementSectionRef.current);
+            achievementCardRefs.current.forEach((ref, idx) => {
+                if (ref && cardObservers[idx]) cardObservers[idx].unobserve(ref);
+            });
         };
-    }, []);
+    }, [achievements.length]);
 
     useEffect(() => {
         const observers = photoRefs.map((ref, idx) => {
@@ -121,6 +155,7 @@ const LandingPage = () => {
 
     return (
         <>
+            <CursorTrail />
             <Navbar />
 
             {/* Hero Section */}
@@ -421,7 +456,16 @@ const LandingPage = () => {
                             </div>
                         ) : achievements.length > 0 ? (
                             achievements.map((achievement, idx) => (
-                                <Col md={4} key={achievement.id || idx} className="animate-fadeInUp" style={{ animationDelay: `${idx * 0.1}s` }}>
+                                <Col
+                                    md={4}
+                                    key={achievement.id || idx}
+                                    ref={el => achievementCardRefs.current[idx] = el}
+                                    style={{
+                                        opacity: achievementCardsVisible[idx] ? 1 : 0,
+                                        transform: achievementCardsVisible[idx] ? 'translateY(0)' : 'translateY(40px)',
+                                        transition: `opacity 0.6s ease-out ${idx * 0.15}s, transform 0.6s ease-out ${idx * 0.15}s`
+                                    }}
+                                >
                                     <div
                                         className="achievement-card"
                                         style={{
@@ -606,44 +650,136 @@ const LandingPage = () => {
                     </h2>
                     <Row className="g-4">
                         {[
-                            { icon: 'video', color: 'var(--primary-500)', title: '24/7 AI Monitoring', desc: 'Advanced YOLOv8 AI continuously monitors kitchen activities, detecting violations in real-time with 99% accuracy.', delay: '0.1s' },
-                            { icon: 'certificate', color: 'var(--accent-500)', title: 'Instant Certification', desc: 'Receive automated hygiene certificates and compliance reports to showcase your commitment to food safety.', delay: '0.2s' },
-                            { icon: 'users', color: 'var(--success)', title: 'Public Transparency', desc: 'Guests can report violations and view hygiene ratings, promoting accountability and trust in the food industry.', delay: '0.3s' }
+                            {
+                                icon: 'video',
+                                gradient: 'linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%)',
+                                shadowColor: 'rgba(102, 126, 234, 0.3)',
+                                title: '24/7 AI Monitoring',
+                                desc: 'Advanced YOLOv8 AI continuously monitors kitchen activities, detecting violations in real-time with 99% accuracy.',
+                                delay: '0.1s'
+                            },
+                            {
+                                icon: 'certificate',
+                                gradient: 'linear-gradient(135deg, rgba(240, 147, 251, 0.85) 0%, rgba(245, 87, 108, 0.85) 100%)',
+                                shadowColor: 'rgba(245, 87, 108, 0.3)',
+                                title: 'Instant Certification',
+                                desc: 'Receive automated hygiene certificates and compliance reports to showcase your commitment to food safety.',
+                                delay: '0.2s'
+                            },
+                            {
+                                icon: 'users',
+                                gradient: 'linear-gradient(135deg, rgba(79, 172, 254, 0.85) 0%, rgba(0, 242, 254, 0.85) 100%)',
+                                shadowColor: 'rgba(79, 172, 254, 0.3)',
+                                title: 'Public Transparency',
+                                desc: 'Guests can report violations and view hygiene ratings, promoting accountability and trust in the food industry.',
+                                delay: '0.3s'
+                            }
                         ].map((feature, idx) => (
-                            <Col md={4} key={idx} className="animate-fadeInUp" style={{ animationDelay: feature.delay }}>
-                                <div className="glass-card text-center card-hover h-100" style={{
-                                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                                }}>
-                                    <div className="mb-4">
-                                        <div className="animate-bounceIn" style={{
-                                            width: '90px',
-                                            height: '90px',
-                                            background: `linear-gradient(135deg, ${feature.color}, ${feature.color}dd)`,
-                                            borderRadius: '20px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            margin: '0 auto',
-                                            boxShadow: `0 10px 30px ${feature.color}40, 0 0 20px ${feature.color}20`,
-                                            animationDelay: `${0.2 + idx * 0.1}s`,
-                                            transition: 'all 0.3s ease'
+                            <Col md={4} key={idx}>
+                                <div
+                                    className="animate-fadeInUp"
+                                    style={{
+                                        animationDelay: feature.delay,
+                                        opacity: 0,
+                                        animation: `fadeInUp 0.8s ease-out ${feature.delay} forwards`
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            background: feature.gradient,
+                                            borderRadius: '24px',
+                                            padding: '2.5rem 2rem',
+                                            height: '100%',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            boxShadow: `0 20px 40px ${feature.shadowColor}`,
+                                            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer',
+                                            backdropFilter: 'blur(10px)'
                                         }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
-                                                e.currentTarget.style.boxShadow = `0 15px 40px ${feature.color}60, 0 0 30px ${feature.color}40`;
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
-                                                e.currentTarget.style.boxShadow = `0 10px 30px ${feature.color}40, 0 0 20px ${feature.color}20`;
-                                            }}>
-                                            <i className={`fas fa-${feature.icon} fa-2x animate-pulse`} style={{
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
+                                            e.currentTarget.style.boxShadow = `0 30px 60px ${feature.shadowColor.replace('0.3', '0.5')}`;
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                            e.currentTarget.style.boxShadow = `0 20px 40px ${feature.shadowColor}`;
+                                        }}
+                                    >
+                                        {/* White overlay for softer colors */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            background: 'rgba(255, 255, 255, 0.1)',
+                                            pointerEvents: 'none'
+                                        }}></div>
+
+                                        {/* Decorative circles */}
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '-50px',
+                                            right: '-50px',
+                                            width: '150px',
+                                            height: '150px',
+                                            borderRadius: '50%',
+                                            background: 'rgba(255, 255, 255, 0.15)',
+                                            filter: 'blur(40px)'
+                                        }}></div>
+
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: '-30px',
+                                            left: '-30px',
+                                            width: '100px',
+                                            height: '100px',
+                                            borderRadius: '50%',
+                                            background: 'rgba(255, 255, 255, 0.15)',
+                                            filter: 'blur(30px)'
+                                        }}></div>
+
+                                        {/* Content */}
+                                        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+                                            <div className="mb-4">
+                                                <div style={{
+                                                    width: '100px',
+                                                    height: '100px',
+                                                    background: 'rgba(255, 255, 255, 0.3)',
+                                                    backdropFilter: 'blur(10px)',
+                                                    borderRadius: '24px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    margin: '0 auto',
+                                                    border: '2px solid rgba(255, 255, 255, 0.4)',
+                                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                                                    transition: 'all 0.4s ease'
+                                                }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                                                    }}
+                                                >
+                                                    <i className={`fas fa-${feature.icon} fa-3x`} style={{
+                                                        color: 'white',
+                                                        filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))'
+                                                    }}></i>
+                                                </div>
+                                            </div>
+                                            <h4 className="mb-3 fw-bold" style={{
                                                 color: 'white',
-                                                animationDelay: `${idx * 0.5}s`
-                                            }}></i>
+                                                fontSize: '1.5rem',
+                                                textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
+                                            }}>{feature.title}</h4>
+                                            <p style={{
+                                                color: 'rgba(255, 255, 255, 0.95)',
+                                                fontSize: '1rem',
+                                                lineHeight: '1.6',
+                                                textShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                                            }}>{feature.desc}</p>
                                         </div>
                                     </div>
-                                    <h4 className="mb-3" style={{ color: 'var(--gray-900)' }}>{feature.title}</h4>
-                                    <p style={{ color: 'var(--gray-600)' }}>{feature.desc}</p>
                                 </div>
                             </Col>
                         ))}

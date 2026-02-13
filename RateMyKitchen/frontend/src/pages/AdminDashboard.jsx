@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Table, Button, Badge, Tab, Tabs, Card } from 'react-bootstrap';
+import { Container, Row, Col, Table, Button, Badge, Tab, Tabs, Card, Modal, Form } from 'react-bootstrap';
 import Navbar from '../components/Navbar';
 import GlassCard from '../components/GlassCard';
 import AchievementManager from '../components/AchievementManager';
@@ -19,6 +19,15 @@ const AdminDashboard = () => {
     // Violation Viewer State
     const [showViolationModal, setShowViolationModal] = useState(false);
     const [selectedHotel, setSelectedHotel] = useState(null);
+
+    // Rating Modal State
+    const [showRatingModal, setShowRatingModal] = useState(false);
+    const [ratingFormData, setRatingFormData] = useState({
+        hygiene_score: '',
+        hygiene_status: 'Pending',
+        memo: '',
+        fine_amount: ''
+    });
 
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -76,112 +85,245 @@ const AdminDashboard = () => {
         setShowViolationModal(true);
     };
 
+    const handleOpenRatingModal = (hotel) => {
+        setSelectedHotel(hotel);
+        setRatingFormData({
+            hygiene_score: hotel.hygiene_score || '',
+            hygiene_status: hotel.hygiene_status || 'Pending',
+            memo: hotel.memo || '',
+            fine_amount: hotel.fine_amount || ''
+        });
+        setShowRatingModal(true);
+    };
+
+    const handleRatingFormChange = (e) => {
+        const { name, value } = e.target;
+        setRatingFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmitRating = async () => {
+        try {
+            await axios.put(
+                `http://localhost:5001/api/admin/hotels/${selectedHotel.id}/rating`,
+                ratingFormData,
+                config
+            );
+            setShowRatingModal(false);
+            fetchHotels();
+            alert('Rating updated successfully!');
+        } catch (err) {
+            alert('Error updating rating: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
     return (
         <>
             <Navbar />
-            <Container className="py-5" style={{ paddingTop: '100px' }}>
+            <Container style={{
+                marginTop: '100px',
+                paddingTop: '40px',
+                paddingBottom: '60px',
+                minHeight: '100vh'
+            }}>
                 <div className="animate-fadeInUp">
-                    <h2 className="mb-2 display-5 fw-bold" style={{ color: 'var(--gray-900)' }}>
-                        Admin Dashboard
-                    </h2>
-                    <p className="mb-4" style={{ color: 'var(--gray-600)' }}>
+                    <div className="d-flex align-items-center gap-3 mb-2">
+                        <div style={{
+                            width: '60px',
+                            height: '60px',
+                            background: 'linear-gradient(135deg, var(--primary-600), var(--accent-600))',
+                            borderRadius: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)'
+                        }}>
+                            <i className="fas fa-user-shield fa-2x" style={{ color: 'white' }}></i>
+                        </div>
+                        <div>
+                            <h2 className="mb-0 display-5 fw-bold" style={{
+                                color: 'var(--gray-900)',
+                                letterSpacing: '-0.02em'
+                            }}>
+                                Admin Dashboard
+                            </h2>
+                        </div>
+                    </div>
+                    <p className="mb-4 ms-5 ps-3" style={{ color: 'var(--gray-600)', fontSize: '1.05rem' }}>
                         Manage hotels, monitor violations, and review guest reports
                     </p>
                 </div>
 
                 {/* Stats Cards */}
-                <Row className="g-4 mb-4">
+                <Row className="g-4 mb-5">
                     <Col md={3} className="animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
-                        <Card className="glass-card border-0 h-100">
-                            <Card.Body>
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600' }}>Total Hotels</p>
-                                        <h3 className="mb-0 fw-bold text-gradient">{stats.totalHotels}</h3>
-                                    </div>
-                                    <div style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        background: 'linear-gradient(135deg, var(--primary-500), var(--primary-700))',
-                                        borderRadius: '12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <i className="fas fa-hotel fa-2x" style={{ color: 'white' }}></i>
-                                    </div>
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%)',
+                                borderRadius: '20px',
+                                padding: '1.5rem',
+                                border: '2px solid rgba(59, 130, 246, 0.2)',
+                                transition: 'all 0.3s ease',
+                                cursor: 'pointer',
+                                height: '100%'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-5px)';
+                                e.currentTarget.style.boxShadow = '0 15px 35px rgba(59, 130, 246, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Hotels</p>
+                                    <h3 className="mb-0 fw-bold" style={{
+                                        background: 'linear-gradient(135deg, var(--primary-600), var(--accent-600))',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                        fontSize: '2.5rem'
+                                    }}>{stats.totalHotels}</h3>
                                 </div>
-                            </Card.Body>
-                        </Card>
+                                <div style={{
+                                    width: '70px',
+                                    height: '70px',
+                                    background: 'linear-gradient(135deg, var(--primary-600), var(--accent-600))',
+                                    borderRadius: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)'
+                                }}>
+                                    <i className="fas fa-hotel fa-2x" style={{ color: 'white' }}></i>
+                                </div>
+                            </div>
+                        </div>
                     </Col>
                     <Col md={3} className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
-                        <Card className="glass-card border-0 h-100">
-                            <Card.Body>
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600' }}>Pending Approvals</p>
-                                        <h3 className="mb-0 fw-bold" style={{ color: 'var(--warning)' }}>{stats.pendingApprovals}</h3>
-                                    </div>
-                                    <div style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        background: 'linear-gradient(135deg, var(--warning), #d97706)',
-                                        borderRadius: '12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <i className="fas fa-clock fa-2x" style={{ color: 'white' }}></i>
-                                    </div>
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)',
+                                borderRadius: '20px',
+                                padding: '1.5rem',
+                                border: '2px solid rgba(245, 158, 11, 0.2)',
+                                transition: 'all 0.3s ease',
+                                cursor: 'pointer',
+                                height: '100%'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-5px)';
+                                e.currentTarget.style.boxShadow = '0 15px 35px rgba(245, 158, 11, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pending Approvals</p>
+                                    <h3 className="mb-0 fw-bold" style={{ color: '#f59e0b', fontSize: '2.5rem' }}>{stats.pendingApprovals}</h3>
                                 </div>
-                            </Card.Body>
-                        </Card>
+                                <div style={{
+                                    width: '70px',
+                                    height: '70px',
+                                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                    borderRadius: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 10px 25px rgba(245, 158, 11, 0.3)'
+                                }}>
+                                    <i className="fas fa-clock fa-2x" style={{ color: 'white' }}></i>
+                                </div>
+                            </div>
+                        </div>
                     </Col>
                     <Col md={3} className="animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
-                        <Card className="glass-card border-0 h-100">
-                            <Card.Body>
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600' }}>Total Violations</p>
-                                        <h3 className="mb-0 fw-bold" style={{ color: 'var(--danger)' }}>{stats.totalViolations}</h3>
-                                    </div>
-                                    <div style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        background: 'linear-gradient(135deg, var(--danger), #dc2626)',
-                                        borderRadius: '12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <i className="fas fa-exclamation-triangle fa-2x" style={{ color: 'white' }}></i>
-                                    </div>
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+                                borderRadius: '20px',
+                                padding: '1.5rem',
+                                border: '2px solid rgba(239, 68, 68, 0.2)',
+                                transition: 'all 0.3s ease',
+                                cursor: 'pointer',
+                                height: '100%'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-5px)';
+                                e.currentTarget.style.boxShadow = '0 15px 35px rgba(239, 68, 68, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Violations</p>
+                                    <h3 className="mb-0 fw-bold" style={{ color: '#ef4444', fontSize: '2.5rem' }}>{stats.totalViolations}</h3>
                                 </div>
-                            </Card.Body>
-                        </Card>
+                                <div style={{
+                                    width: '70px',
+                                    height: '70px',
+                                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                    borderRadius: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)'
+                                }}>
+                                    <i className="fas fa-exclamation-triangle fa-2x" style={{ color: 'white' }}></i>
+                                </div>
+                            </div>
+                        </div>
                     </Col>
                     <Col md={3} className="animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
-                        <Card className="glass-card border-0 h-100">
-                            <Card.Body>
-                                <div className="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600' }}>Guest Reports</p>
-                                        <h3 className="mb-0 fw-bold text-gradient">{stats.activeReports}</h3>
-                                    </div>
-                                    <div style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        background: 'linear-gradient(135deg, var(--accent-500), var(--accent-700))',
-                                        borderRadius: '12px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <i className="fas fa-flag fa-2x" style={{ color: 'white' }}></i>
-                                    </div>
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(13, 148, 136, 0.1) 100%)',
+                                borderRadius: '20px',
+                                padding: '1.5rem',
+                                border: '2px solid rgba(20, 184, 166, 0.2)',
+                                transition: 'all 0.3s ease',
+                                cursor: 'pointer',
+                                height: '100%'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-5px)';
+                                e.currentTarget.style.boxShadow = '0 15px 35px rgba(20, 184, 166, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="mb-1" style={{ color: 'var(--gray-600)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Guest Reports</p>
+                                    <h3 className="mb-0 fw-bold" style={{
+                                        background: 'linear-gradient(135deg, var(--accent-600), var(--accent-700))',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                        fontSize: '2.5rem'
+                                    }}>{stats.activeReports}</h3>
                                 </div>
-                            </Card.Body>
-                        </Card>
+                                <div style={{
+                                    width: '70px',
+                                    height: '70px',
+                                    background: 'linear-gradient(135deg, var(--accent-600), var(--accent-700))',
+                                    borderRadius: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 10px 25px rgba(20, 184, 166, 0.3)'
+                                }}>
+                                    <i className="fas fa-flag fa-2x" style={{ color: 'white' }}></i>
+                                </div>
+                            </div>
+                        </div>
                     </Col>
                 </Row>
 
@@ -245,13 +387,22 @@ const AdminDashboard = () => {
                                                             </Button>
                                                         </div>
                                                     ) : (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline-primary"
-                                                            onClick={() => handleViewViolations(hotel)}
-                                                        >
-                                                            <i className="fas fa-video me-1"></i>Monitor
-                                                        </Button>
+                                                        <div className="d-flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline-primary"
+                                                                onClick={() => handleViewViolations(hotel)}
+                                                            >
+                                                                <i className="fas fa-video me-1"></i>Monitor
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline-warning"
+                                                                onClick={() => handleOpenRatingModal(hotel)}
+                                                            >
+                                                                <i className="fas fa-star me-1"></i>Rating
+                                                            </Button>
+                                                        </div>
                                                     )}
                                                 </td>
                                             </tr>
@@ -329,6 +480,119 @@ const AdminDashboard = () => {
                     hotelId={selectedHotel?.id}
                     hotelName={selectedHotel?.hotel_name}
                 />
+
+                {/* Rating Update Modal */}
+                <Modal show={showRatingModal} onHide={() => setShowRatingModal(false)} size="lg" centered>
+                    <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, var(--primary-600), var(--accent-600))', color: 'white', border: 'none' }}>
+                        <Modal.Title>
+                            <i className="fas fa-star me-2"></i>
+                            Update Hygiene Rating - {selectedHotel?.hotel_name}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body style={{ padding: '2rem' }}>
+                        <Form>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label style={{ fontWeight: '600', color: 'var(--gray-700)' }}>
+                                            <i className="fas fa-chart-line me-2"></i>Hygiene Score (0-100)
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="number"
+                                            name="hygiene_score"
+                                            value={ratingFormData.hygiene_score}
+                                            onChange={handleRatingFormChange}
+                                            min="0"
+                                            max="100"
+                                            placeholder="Enter score"
+                                            style={{ borderRadius: '8px', padding: '0.75rem' }}
+                                        />
+                                        <Form.Text className="text-muted">
+                                            Official hygiene score (0 = Poor, 100 = Excellent)
+                                        </Form.Text>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label style={{ fontWeight: '600', color: 'var(--gray-700)' }}>
+                                            <i className="fas fa-clipboard-check me-2"></i>Hygiene Status
+                                        </Form.Label>
+                                        <Form.Select
+                                            name="hygiene_status"
+                                            value={ratingFormData.hygiene_status}
+                                            onChange={handleRatingFormChange}
+                                            style={{ borderRadius: '8px', padding: '0.75rem' }}
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Clean">Clean</option>
+                                            <option value="Moderately Clean">Moderately Clean</option>
+                                            <option value="Dirty">Dirty</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col md={12}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label style={{ fontWeight: '600', color: 'var(--gray-700)' }}>
+                                            <i className="fas fa-sticky-note me-2"></i>Admin Memo
+                                        </Form.Label>
+                                        <Form.Control
+                                            as="textarea"
+                                            rows={4}
+                                            name="memo"
+                                            value={ratingFormData.memo}
+                                            onChange={handleRatingFormChange}
+                                            placeholder="Enter notes, recommendations, or observations..."
+                                            style={{ borderRadius: '8px', padding: '0.75rem' }}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label style={{ fontWeight: '600', color: 'var(--gray-700)' }}>
+                                            <i className="fas fa-dollar-sign me-2"></i>Fine Amount
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="number"
+                                            name="fine_amount"
+                                            value={ratingFormData.fine_amount}
+                                            onChange={handleRatingFormChange}
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            style={{ borderRadius: '8px', padding: '0.75rem' }}
+                                        />
+                                        <Form.Text className="text-muted">
+                                            Total fines imposed (in currency)
+                                        </Form.Text>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer style={{ border: 'none', padding: '1.5rem' }}>
+                        <Button variant="secondary" onClick={() => setShowRatingModal(false)} style={{ borderRadius: '8px', padding: '0.5rem 1.5rem' }}>
+                            <i className="fas fa-times me-2"></i>Cancel
+                        </Button>
+                        <Button
+                            onClick={handleSubmitRating}
+                            style={{
+                                background: 'linear-gradient(135deg, var(--primary-600), var(--accent-600))',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '0.5rem 1.5rem',
+                                fontWeight: '600'
+                            }}
+                        >
+                            <i className="fas fa-save me-2"></i>Update Rating
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </>
     );

@@ -39,6 +39,30 @@ const Hotel = sequelize.define('Hotel', {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
+    hygiene_score: {
+        type: DataTypes.INTEGER,
+        defaultValue: null,
+        validate: {
+            min: 0,
+            max: 100
+        },
+        comment: 'Official hygiene score set by admin (0-100)'
+    },
+    memo: {
+        type: DataTypes.TEXT,
+        defaultValue: null,
+        comment: 'Admin notes and memos for the hotel'
+    },
+    fine_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0.00,
+        comment: 'Total fines imposed on the hotel'
+    },
+    last_inspection_date: {
+        type: DataTypes.DATE,
+        defaultValue: null,
+        comment: 'Date of last admin inspection'
+    },
     certificate_generated: {
         type: DataTypes.BOOLEAN,
         defaultValue: false

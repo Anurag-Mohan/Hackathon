@@ -31,17 +31,15 @@ def analyze_video(video_path):
     sample_rate = 30
     
     start_time = time.time()
-    max_duration = 300 # Run for max 5 minutes or until violations limit
+    max_duration = 600 # Run for max 10 minutes to simulate continuous monitoring
     loop_count = 0
-    max_loops = 10 # Loop at most 10 times to prevent infinite run if no violations
+    # No max_loops limit - continuous looping for CCTV simulation
 
     while True:
         ret, frame = cap.read()
         if not ret:
-            # End of video, loop back
+            # End of video, loop back to simulate continuous CCTV feed
             loop_count += 1
-            if loop_count >= max_loops:
-                break
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
             
@@ -89,8 +87,8 @@ def analyze_video(video_path):
                     })
                     
                     # Limit to one violation per frame to avoid duplicates
-                    # Or limit total violations per video to avoid spam
-                    if len(violations) >= 50: # Stop after finding 50 violations
+                    # Return immediately after finding violations to update DB quickly
+                    if len(violations) >= 10: # Return after finding 10 violations per cycle
                         cap.release()
                         return violations
 

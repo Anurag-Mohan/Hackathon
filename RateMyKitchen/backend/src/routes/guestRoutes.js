@@ -16,5 +16,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.post('/report', upload.single('media'), guestController.submitReport);
+router.get('/search', guestController.searchHotels);
+router.get('/hotels/:id', guestController.getHotelDetails);
 
 module.exports = router;
