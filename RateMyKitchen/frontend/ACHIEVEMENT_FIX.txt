@@ -1,0 +1,27 @@
+// Temporary fix file - copy this code to replace lines 433-444 in LandingPage.jsx
+
+>
+    {achievement.image_path ? (
+        <img 
+            src={`http://localhost:5001${achievement.image_path}`}
+            alt={achievement.title}
+            style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+            }}
+        />
+    ) : (
+        <>
+            <i className={`fas fa-${achievement.icon || 'trophy'} fa-4x mb-3`}
+                style={{
+                    color: 'var(--primary-400)',
+                    animation: 'float 4s ease-in-out infinite',
+                    animationDelay: `${idx * 0.3}s`
+                }}></i>
+            <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem' }}>
+                Achievement Image
+            </p>
+        </>
+    )}
+</div>

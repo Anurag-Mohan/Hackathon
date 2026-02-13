@@ -7,12 +7,12 @@ import axios from 'axios';
 const ReportPage = () => {
     const [formData, setFormData] = useState({
         hotel_name_input: '',
-        google_maps_link: '',
-        description: ''
+        description: '',
+        google_maps_link: ''
     });
     const [file, setFile] = useState(null);
     const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
+    const [messageType, setMessageType] = useState('');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,66 +26,133 @@ const ReportPage = () => {
         e.preventDefault();
         const data = new FormData();
         data.append('hotel_name_input', formData.hotel_name_input);
-        data.append('google_maps_link', formData.google_maps_link);
         data.append('description', formData.description);
+        data.append('google_maps_link', formData.google_maps_link);
         data.append('media', file);
 
         try {
-            await axios.post('http://localhost:5000/api/guest/report', data, {
+            await axios.post('http://localhost:5001/api/guest/report', data, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setMessage('Report submitted successfully! Thank you for your contribution.');
-            setFormData({ hotel_name_input: '', google_maps_link: '', description: '' });
+            setMessageType('success');
+            setFormData({ hotel_name_input: '', description: '', google_maps_link: '' });
             setFile(null);
         } catch (err) {
-            setError(err.response?.data?.message || 'Submission failed');
+            setMessage('Failed to submit report. Please try again.');
+            setMessageType('danger');
         }
     };
 
     return (
         <>
             <Navbar />
-            <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', paddingTop: '80px' }}>
-                <Row className="w-100 justify-content-center">
-                    <Col md={8}>
-                        <GlassCard>
-                            <h2 className="text-center mb-4 text-primary">Report a Violation</h2>
-                            <p className="text-center text-white-50 mb-4">Helper keep kitchens clean. Upload photos or videos anonymously.</p>
+            <Container className="py-5" style={{ paddingTop: '120px', minHeight: '100vh' }}>
+                <Row className="justify-content-center">
+                    <Col md={8} lg={6}>
+                        <div className="animate-fadeInUp">
+                            <div className="text-center mb-4">
+                                <div style={{
+                                    width: '80px',
+                                    height: '80px',
+                                    margin: '0 auto 1.5rem',
+                                    borderRadius: '20px',
+                                    background: 'linear-gradient(135deg, var(--danger), #dc2626)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: 'var(--shadow-xl)'
+                                }}>
+                                    <i className="fas fa-flag fa-2x" style={{ color: 'white' }}></i>
+                                </div>
+                                <h2 className="fw-bold mb-2" style={{ color: 'var(--gray-900)' }}>Report a Violation</h2>
+                                <p style={{ color: 'var(--gray-600)' }}>
+                                    Help us maintain food safety standards by reporting hygiene violations
+                                </p>
+                            </div>
 
-                            {message && <Alert variant="success">{message}</Alert>}
-                            {error && <Alert variant="danger">{error}</Alert>}
+                            {message && (
+                                <Alert variant={messageType} className="animate-fadeIn">
+                                    <i className={`fas fa-${messageType === 'success' ? 'check-circle' : 'exclamation-circle'} me-2`}></i>
+                                    {message}
+                                </Alert>
+                            )}
 
-                            <Form onSubmit={handleSubmit}>
-                                <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>Hotel Name (Approx)</Form.Label>
-                                            <Form.Control type="text" name="hotel_name_input" className="form-control-glass" onChange={handleChange} value={formData.hotel_name_input} required />
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>Google Maps Link</Form.Label>
-                                            <Form.Control type="url" name="google_maps_link" className="form-control-glass" onChange={handleChange} value={formData.google_maps_link} />
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
+                            <GlassCard>
+                                <Form onSubmit={handleSubmit}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Hotel Name</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="hotel_name_input"
+                                            placeholder="Enter the hotel name"
+                                            value={formData.hotel_name_input}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </Form.Group>
 
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Description of Issue</Form.Label>
-                                    <Form.Control as="textarea" rows={3} name="description" className="form-control-glass" onChange={handleChange} value={formData.description} />
-                                </Form.Group>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Description</Form.Label>
+                                        <Form.Control
+                                            as="textarea"
+                                            rows={4}
+                                            name="description"
+                                            placeholder="Describe the hygiene violation in detail..."
+                                            value={formData.description}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </Form.Group>
 
-                                <Form.Group className="mb-4">
-                                    <Form.Label>Upload Evidence (Image/Video)</Form.Label>
-                                    <Form.Control type="file" className="form-control-glass" onChange={handleFileChange} required />
-                                </Form.Group>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <i className="fas fa-map-marker-alt me-2" style={{ color: 'var(--primary-600)' }}></i>
+                                            Google Maps Link (Optional)
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="url"
+                                            name="google_maps_link"
+                                            placeholder="Paste Google Maps link of the location"
+                                            value={formData.google_maps_link}
+                                            onChange={handleChange}
+                                        />
+                                    </Form.Group>
 
-                                <Button type="submit" className="w-100 btn-primary-custom">
-                                    Submit Report
-                                </Button>
-                            </Form>
-                        </GlassCard>
+                                    <Form.Group className="mb-4">
+                                        <Form.Label>
+                                            <i className="fas fa-camera me-2" style={{ color: 'var(--primary-600)' }}></i>
+                                            Upload Evidence (Photo/Video)
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            onChange={handleFileChange}
+                                            required
+                                        />
+                                        <Form.Text style={{ color: 'var(--gray-500)' }}>
+                                            Accepted formats: JPG, PNG, MP4, MOV (Max 10MB)
+                                        </Form.Text>
+                                    </Form.Group>
+
+                                    <Button type="submit" className="w-100 btn-danger">
+                                        <i className="fas fa-paper-plane me-2"></i>
+                                        Submit Report
+                                    </Button>
+                                </Form>
+
+                                <div className="mt-4 p-3" style={{
+                                    background: 'var(--primary-50)',
+                                    borderRadius: '12px',
+                                    border: '1px solid var(--primary-200)'
+                                }}>
+                                    <p className="mb-0" style={{ color: 'var(--gray-700)', fontSize: '0.875rem' }}>
+                                        <i className="fas fa-info-circle me-2" style={{ color: 'var(--primary-600)' }}></i>
+                                        Your report will be reviewed by our admin team. All submissions are confidential.
+                                    </p>
+                                </div>
+                            </GlassCard>
+                        </div>
                     </Col>
                 </Row>
             </Container>

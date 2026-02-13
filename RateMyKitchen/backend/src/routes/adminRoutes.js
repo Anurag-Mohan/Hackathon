@@ -1,0 +1,37 @@
+const express = require('express');
+const router = express.Router();
+const adminController = require('../controllers/adminController');
+console.log('Admin Routes file loaded'); // DEBUG LOG
+const authMiddleware = require('../middleware/authMiddleware');
+const { uploadAchievement } = require('../config/upload');
+
+// Validates that user is admin
+const adminOnly = (req, res, next) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+    next();
+};
+
+router.use(authMiddleware, adminOnly);
+
+router.get('/hotels', adminController.getHotels);
+
+// Test Route to verify file is loaded and reachable
+router.get('/test-route', (req, res) => {
+    res.json({ message: 'Admin Routes are loaded and working!' });
+});
+
+router.put('/hotels/:id/approve', (req, res, next) => {
+    console.log('Hit approve route for ID:', req.params.id);
+    next();
+}, adminController.approveHotel);
+router.put('/hotels/:id/reject', adminController.rejectHotel);
+router.post('/fine', adminController.issueFine);
+router.post('/memo', adminController.sendMemo);
+router.get('/reports', adminController.getGuestReports);
+
+// Achievement Management Routes
+router.post('/achievements/upload', uploadAchievement.single('image'), adminController.uploadAchievement);
+router.get('/achievements', adminController.getAllAchievements);
+router.delete('/achievements/:id', adminController.deleteAchievement);
+
+module.exports = router;

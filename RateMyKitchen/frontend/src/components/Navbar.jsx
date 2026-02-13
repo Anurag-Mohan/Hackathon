@@ -1,58 +1,72 @@
 import React from 'react';
-import { Navbar, Container, Nav, Button } from 'react-bootstrap';
+import { Navbar as BSNavbar, Container, Nav, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Navigation = () => {
+const Navbar = () => {
     const navigate = useNavigate();
-    const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isLoggedIn = !!localStorage.getItem('token');
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        navigate('/login');
+        navigate('/');
     };
 
     return (
-        <Navbar expand="lg" variant="dark" className="glass-nav fixed-top">
+        <BSNavbar expand="lg" fixed="top" className="navbar">
             <Container>
-                <Navbar.Brand as={Link} to="/" className="fw-bold text-primary">
-                    <i className="fas fa-utensils me-2"></i>RateMyKitchen
-                </Navbar.Brand>
-                <Navbar.Toggle aria-controls="basic-navbar-nav" />
-                <Navbar.Collapse id="basic-navbar-nav">
+                <BSNavbar.Brand as={Link} to="/" className="navbar-brand">
+                    <i className="fas fa-utensils me-2"></i>
+                    RateMyKitchen
+                </BSNavbar.Brand>
+                <BSNavbar.Toggle aria-controls="basic-navbar-nav" />
+                <BSNavbar.Collapse id="basic-navbar-nav">
                     <Nav className="ms-auto align-items-center">
-                        <Nav.Link as={Link} to="/">Home</Nav.Link>
-
-                        {!token ? (
+                        {!isLoggedIn ? (
                             <>
-                                <Nav.Link as={Link} to="/register-hotel">Register Hotel</Nav.Link>
-                                <Button as={Link} to="/login" variant="outline-light" className="ms-2 rounded-pill">
-                                    Login
-                                </Button>
+                                <Nav.Link as={Link} to="/" className="nav-link">
+                                    <i className="fas fa-home me-2"></i>Home
+                                </Nav.Link>
+                                <Nav.Link as={Link} to="/report" className="nav-link">
+                                    <i className="fas fa-flag me-2"></i>Report
+                                </Nav.Link>
+                                <Nav.Link as={Link} to="/login" className="nav-link">
+                                    <i className="fas fa-sign-in-alt me-2"></i>Login
+                                </Nav.Link>
+                                <Link to="/register-hotel">
+                                    <Button variant="primary" size="sm" className="ms-2">
+                                        <i className="fas fa-user-plus me-2"></i>Register
+                                    </Button>
+                                </Link>
                             </>
                         ) : (
                             <>
-                                {user.role === 'admin' && (
-                                    <Nav.Link as={Link} to="/admin">Dashboard</Nav.Link>
-                                )}
-                                {user.role === 'hotel' && (
-                                    <Nav.Link as={Link} to="/hotel">My Kitchen</Nav.Link>
-                                )}
-                                <Button onClick={handleLogout} variant="outline-danger" className="ms-2 rounded-pill">
-                                    Logout
-                                </Button>
+                                <Nav.Link as={Link} to={user.role === 'admin' ? '/admin' : '/hotel'} className="nav-link">
+                                    <i className="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </Nav.Link>
+                                <div className="d-flex align-items-center ms-3">
+                                    <div className="me-3" style={{
+                                        padding: '0.5rem 1rem',
+                                        background: 'var(--primary-50)',
+                                        borderRadius: '8px',
+                                        border: '1px solid var(--primary-200)'
+                                    }}>
+                                        <i className={`fas fa-${user.role === 'admin' ? 'user-shield' : 'hotel'} me-2`}
+                                            style={{ color: 'var(--primary-600)' }}></i>
+                                        <span style={{ color: 'var(--gray-800)', fontWeight: '600' }}>{user.name}</span>
+                                    </div>
+                                    <Button variant="outline-primary" size="sm" onClick={handleLogout}>
+                                        <i className="fas fa-sign-out-alt me-2"></i>Logout
+                                    </Button>
+                                </div>
                             </>
                         )}
-
-                        <Button as={Link} to="/report" className="btn-primary-custom ms-3">
-                            Report Violation
-                        </Button>
                     </Nav>
-                </Navbar.Collapse>
+                </BSNavbar.Collapse>
             </Container>
-        </Navbar>
+        </BSNavbar>
     );
 };
 
-export default Navigation;
+export default Navbar;
