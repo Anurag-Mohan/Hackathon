@@ -1,27 +1,101 @@
 import sys
 import json
-import random
+import cv2
+import time
+import os
+from ultralytics import YOLO
 
-# Mocking YOLOv8 logic for now since we don't have the model file yet.
-# In production, this would load 'best.pt' and process frame.
+# Models path relative to this script
+MODEL_PATH = os.path.join(os.path.dirname(__file__), '../../model/best.pt')
+SNAPSHOT_DIR = os.path.join(os.path.dirname(__file__), '../uploads/snapshots')
 
-def analyze_frame(video_path):
-    # Simulate processing
-    # Randomly decide if there is a violation
-    is_violation = random.choice([True, False, False, False]) # 25% chance
+# Ensure snapshot directory exists
+os.makedirs(SNAPSHOT_DIR, exist_ok=True)
+
+def analyze_video(video_path):
+    if not os.path.exists(MODEL_PATH):
+        return {"error": f"Model not found at {MODEL_PATH}"}
     
-    if is_violation:
-        violation_types = ["No Mask", "No Gloves", "Dirty Floor", "Pest Detected"]
-        severity_levels = ["Low", "Medium", "High"]
+    try:
+        model = YOLO(MODEL_PATH)
+    except Exception as e:
+        return {"error": f"Failed to load model: {str(e)}"}
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        return {"error": "Could not open video file"}
+
+    violations = []
+    frame_count = 0
+    # Process every 30th frame (approx every 1 second)
+    sample_rate = 30
+    
+    start_time = time.time()
+    max_duration = 300 # Run for max 5 minutes or until violations limit
+    loop_count = 0
+    max_loops = 10 # Loop at most 10 times to prevent infinite run if no violations
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            # End of video, loop back
+            loop_count += 1
+            if loop_count >= max_loops:
+                break
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            continue
+            
+        frame_count += 1
+        if frame_count % sample_rate != 0:
+            continue
+
+        # Check timeout
+        if time.time() - start_time > max_duration:
+            break
+
+        # Run inference
+        results = model(frame, verbose=False)
         
-        return {
-            "violation": True,
-            "type": random.choice(violation_types),
-            "severity": random.choice(severity_levels),
-            "snapshot": f"/uploads/snapshots/mock_{random.randint(1000,9999)}.jpg" # Placeholder path
-        }
-    else:
-        return {"violation": False}
+        for r in results:
+            for box in r.boxes:
+                # Get class and confidence
+                cls = int(box.cls[0])
+                conf = float(box.conf[0])
+                label = model.names[cls]
+                
+                # Check confidence threshold (adjust as needed)
+                if conf > 0.25:
+                    # Found a violation! Save snapshot.
+                    timestamp = int(time.time() * 1000)
+                    filename = f"violation_{timestamp}_{frame_count}.jpg"
+                    filepath = os.path.join(SNAPSHOT_DIR, filename)
+                    
+                    # Draw bounding box on frame for the snapshot
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 10), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                    
+                    cv2.imwrite(filepath, frame)
+                    
+                    # Map generic labels to specific violation types if needed
+                    violation_type = label.replace('_', ' ').title()
+                    
+                    violations.append({
+                        "violation": True,
+                        "type": violation_type,
+                        "severity": "High" if conf > 0.7 else "Medium",
+                        "snapshot": f"/uploads/snapshots/{filename}"
+                    })
+                    
+                    # Limit to one violation per frame to avoid duplicates
+                    # Or limit total violations per video to avoid spam
+                    if len(violations) >= 50: # Stop after finding 50 violations
+                        cap.release()
+                        return violations
+
+    cap.release()
+    return violations
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -29,5 +103,14 @@ if __name__ == "__main__":
         sys.exit(1)
         
     video_path = sys.argv[1]
-    result = analyze_frame(video_path)
-    print(json.dumps(result))
+    
+    # Run analysis
+    try:
+        results = analyze_video(video_path)
+        # Ensure we return a list, even if empty or single dict error
+        if isinstance(results, dict) and "error" in results:
+             print(json.dumps(results))
+        else:
+             print(json.dumps(results))
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))

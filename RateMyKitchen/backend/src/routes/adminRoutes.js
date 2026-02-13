@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const statsController = require('../controllers/statsController'); // Import Stats Controller
 console.log('Admin Routes file loaded'); // DEBUG LOG
 const authMiddleware = require('../middleware/authMiddleware');
 const { uploadAchievement } = require('../config/upload');
@@ -33,5 +34,15 @@ router.get('/reports', adminController.getGuestReports);
 router.post('/achievements/upload', uploadAchievement.single('image'), adminController.uploadAchievement);
 router.get('/achievements', adminController.getAllAchievements);
 router.delete('/achievements/:id', adminController.deleteAchievement);
+
+// Video Processing Route
+const { uploadVideo } = require('../config/upload');
+router.post('/videos/process', uploadVideo.single('video'), adminController.processHotelVideo);
+
+// Get Violations for a specific hotel (used by Admin Dashboard Modal)
+router.get('/hotels/:hotelId/violations', statsController.getHotelViolations);
+
+// Download PDF Report
+router.get('/hotels/:id/report', adminController.generateReport);
 
 module.exports = router;

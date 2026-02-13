@@ -144,3 +144,190 @@ exports.deleteAchievement = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// Video Processing & AI Violation Detection
+const { spawn } = require('child_process');
+
+exports.processHotelVideo = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No video file uploaded' });
+        }
+
+        const { hotel_id } = req.body;
+        if (!hotel_id) {
+            return res.status(400).json({ error: 'Hotel ID is required' });
+        }
+
+        const videoPath = path.join(__dirname, '../../', req.file.path);
+        const scriptPath = path.join(__dirname, '../../yolo_model/inference.py');
+
+        // Verify script exists
+        if (!fs.existsSync(scriptPath)) {
+            return res.status(500).json({ error: 'Inference script not found' });
+        }
+
+        // Spawn Python process
+        const pythonProcess = spawn('python', [scriptPath, videoPath]);
+
+        let dataString = '';
+        let errorString = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+            dataString += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            errorString += data.toString();
+        });
+
+        pythonProcess.on('close', async (code) => {
+            // Delete video file after processing to save space (optional)
+            // fs.unlinkSync(videoPath);
+
+            if (code !== 0) {
+                console.error(`Python script exited with code ${code}: ${errorString}`);
+                return res.status(500).json({ error: 'Video processing failed', details: errorString });
+            }
+
+            try {
+                // Parse JSON output from Python script
+                const violationsData = JSON.parse(dataString);
+
+                if (violationsData.error) {
+                    return res.status(400).json({ error: violationsData.error });
+                }
+
+                // Save violations to database
+                const createdViolations = [];
+                for (const v of violationsData) {
+                    if (v.violation) {
+                        const newViolation = await Violation.create({
+                            hotel_id,
+                            violation_type: v.type,
+                            severity: v.severity,
+                            snapshot_url: v.snapshot,
+                            detected_at: new Date()
+                        });
+                        createdViolations.push(newViolation);
+                    }
+                }
+
+                res.json({
+                    message: 'Video processed successfully',
+                    violations_detected: createdViolations.length,
+                    violations: createdViolations
+                });
+
+            } catch (parseError) {
+                console.error('JSON Parse Error:', parseError);
+                console.error('Raw Output:', dataString); // Log raw output for debugging
+                res.status(500).json({ error: 'Failed to parse processing results', details: parseError.message });
+            }
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+// Report Generation
+const PDFDocument = require('pdfkit');
+const { Op } = require('sequelize');
+
+exports.generateReport = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { startDate, endDate } = req.query;
+
+        const hotel = await Hotel.findByPk(id);
+        if (!hotel) return res.status(404).json({ message: 'Hotel not found' });
+
+        // Date Filter
+        const dateFilter = {};
+        if (startDate && endDate) {
+            dateFilter.detected_at = {
+                [Op.between]: [new Date(startDate), new Date(endDate)]
+            };
+        } else if (startDate) {
+            dateFilter.detected_at = { [Op.gte]: new Date(startDate) };
+        }
+
+        const violations = await Violation.findAll({
+            where: { hotel_id: id, ...dateFilter },
+            order: [['detected_at', 'DESC']]
+        });
+
+        const fines = await Fine.findAll({
+            where: { hotel_id: id },
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Initialize PDF
+        const doc = new PDFDocument();
+        const filename = `Report_${hotel.hotel_name.replace(/ /g, '_')}_${Date.now()}.pdf`;
+
+        res.setHeader('Content-disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-type', 'application/pdf');
+
+        doc.pipe(res);
+
+        // Header
+        doc.fontSize(25).text('RateMyKitchen - Hotel Report', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' });
+        doc.moveDown();
+        doc.moveTo(50, 100).lineTo(550, 100).stroke();
+
+        // Hotel Details
+        doc.moveDown();
+        doc.fontSize(16).text(`Hotel: ${hotel.hotel_name}`);
+        doc.fontSize(12).text(`Email: ${hotel.email}`);
+        doc.text(`Address: ${hotel.address}`);
+        doc.text(`Contact: ${hotel.contact}`);
+        doc.text(`Current Hygiene Status: ${hotel.hygiene_status || 'N/A'}`);
+        doc.moveDown();
+
+        // Summary Stats
+        doc.fontSize(18).text('Summary Statistics', { underline: true });
+        doc.moveDown();
+        doc.fontSize(12).text(`Total Violations (Selected Period): ${violations.length}`);
+        doc.text(`Total Fines Issued: ${fines.length}`);
+        doc.moveDown();
+
+        // Violations List
+        if (violations.length > 0) {
+            doc.fontSize(18).text('Violation Details', { underline: true });
+            doc.moveDown();
+
+            violations.forEach((v, i) => {
+                doc.fontSize(14).text(`${i + 1}. ${v.violation_type} (${v.severity})`);
+                doc.fontSize(10).text(`Detected At: ${new Date(v.detected_at).toLocaleString()}`);
+                doc.moveDown(0.5);
+            });
+        } else {
+            doc.fontSize(14).text('No violations found for this period.');
+        }
+
+        // Fines List
+        if (fines.length > 0) {
+            doc.addPage();
+            doc.fontSize(18).text('Fines History', { underline: true });
+            doc.moveDown();
+
+            fines.forEach((f, i) => {
+                doc.fontSize(12).text(`${i + 1}. Amount: $${f.amount}`);
+                doc.text(`Reason: ${f.reason}`);
+                doc.text(`Date: ${new Date(f.createdAt).toLocaleString()}`);
+                doc.moveDown(0.5);
+            });
+        }
+
+        doc.end();
+
+    } catch (err) {
+        console.error(err);
+        if (!res.headersSent) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+};

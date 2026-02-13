@@ -3,6 +3,7 @@ import { Container, Row, Col, Table, Button, Badge, Tab, Tabs, Card } from 'reac
 import Navbar from '../components/Navbar';
 import GlassCard from '../components/GlassCard';
 import AchievementManager from '../components/AchievementManager';
+import ViolationViewer from '../components/ViolationViewer';
 import axios from 'axios';
 
 const AdminDashboard = () => {
@@ -14,6 +15,10 @@ const AdminDashboard = () => {
         totalViolations: 0,
         activeReports: 0
     });
+
+    // Violation Viewer State
+    const [showViolationModal, setShowViolationModal] = useState(false);
+    const [selectedHotel, setSelectedHotel] = useState(null);
 
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -64,6 +69,11 @@ const AdminDashboard = () => {
         } catch (err) {
             alert('Error rejecting hotel');
         }
+    };
+
+    const handleViewViolations = (hotel) => {
+        setSelectedHotel(hotel);
+        setShowViolationModal(true);
     };
 
     return (
@@ -207,9 +217,25 @@ const AdminDashboard = () => {
                                                         {hotel.hygiene_status || 'N/A'}
                                                     </Badge>
                                                 </td>
-                                                <td><strong>{hotel.violation_count || 0}</strong></td>
                                                 <td>
-                                                    {hotel.is_verified === 0 && (
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <strong>{hotel.violation_count || 0}</strong>
+                                                        {hotel.violation_count > 0 && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline-danger"
+                                                                className="rounded-circle"
+                                                                style={{ width: '32px', height: '32px', padding: 0 }}
+                                                                onClick={() => handleViewViolations(hotel)}
+                                                                title="View Snapshots"
+                                                            >
+                                                                <i className="fas fa-eye"></i>
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {hotel.is_verified === 0 ? (
                                                         <div className="d-flex gap-2">
                                                             <Button size="sm" variant="success" onClick={() => handleApprove(hotel.id)}>
                                                                 <i className="fas fa-check me-1"></i>Approve
@@ -218,6 +244,14 @@ const AdminDashboard = () => {
                                                                 <i className="fas fa-times me-1"></i>Reject
                                                             </Button>
                                                         </div>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline-primary"
+                                                            onClick={() => handleViewViolations(hotel)}
+                                                        >
+                                                            <i className="fas fa-video me-1"></i>Monitor
+                                                        </Button>
                                                     )}
                                                 </td>
                                             </tr>
@@ -288,6 +322,13 @@ const AdminDashboard = () => {
                         <AchievementManager />
                     </Tab>
                 </Tabs>
+
+                <ViolationViewer
+                    show={showViolationModal}
+                    onHide={() => setShowViolationModal(false)}
+                    hotelId={selectedHotel?.id}
+                    hotelName={selectedHotel?.hotel_name}
+                />
             </Container>
         </>
     );

@@ -3,6 +3,7 @@ import { Container, Row, Col, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import HeroImage from '../assets/hero-image.png';
 
 const LandingPage = () => {
     const [scrollY, setScrollY] = useState(0);
@@ -16,6 +17,10 @@ const LandingPage = () => {
         activeMonitoring: 0
     });
     const [loading, setLoading] = useState(true);
+    const [heroTextVisible, setHeroTextVisible] = useState(false);
+    const [achievementSectionVisible, setAchievementSectionVisible] = useState(false);
+    const heroTextRef = React.useRef(null);
+    const achievementSectionRef = React.useRef(null);
 
     // Fetch achievements and stats from API
     useEffect(() => {
@@ -51,6 +56,34 @@ const LandingPage = () => {
         const handleScroll = () => setScrollY(window.scrollY);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Intersection Observer for hero text and achievement section
+    useEffect(() => {
+        const observerOptions = {
+            threshold: 0.2,
+            rootMargin: '0px'
+        };
+
+        const heroObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                setHeroTextVisible(entry.isIntersecting);
+            });
+        }, observerOptions);
+
+        const achievementObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                setAchievementSectionVisible(entry.isIntersecting);
+            });
+        }, observerOptions);
+
+        if (heroTextRef.current) heroObserver.observe(heroTextRef.current);
+        if (achievementSectionRef.current) achievementObserver.observe(achievementSectionRef.current);
+
+        return () => {
+            if (heroTextRef.current) heroObserver.unobserve(heroTextRef.current);
+            if (achievementSectionRef.current) achievementObserver.unobserve(achievementSectionRef.current);
+        };
     }, []);
 
     useEffect(() => {
@@ -99,17 +132,17 @@ const LandingPage = () => {
                 position: 'relative',
                 overflow: 'hidden'
             }}>
-                {/* Animated Floating Background Elements */}
+                {/* Animated Floating Background Elements - Enhanced */}
                 <div style={{
                     position: 'absolute',
                     top: '10%',
                     left: '5%',
-                    width: '150px',
-                    height: '150px',
+                    width: '400px',
+                    height: '400px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(20, 184, 166, 0.15))',
-                    animation: 'float 6s ease-in-out infinite',
-                    filter: 'blur(40px)',
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(20, 184, 166, 0.35))',
+                    animation: 'float 6s ease-in-out infinite, pulse 4s ease-in-out infinite',
+                    filter: 'blur(100px)',
                     zIndex: 0,
                     transform: `translateY(${scrollY * 0.1}px)`
                 }}></div>
@@ -117,12 +150,12 @@ const LandingPage = () => {
                     position: 'absolute',
                     top: '60%',
                     right: '10%',
-                    width: '200px',
-                    height: '200px',
+                    width: '450px',
+                    height: '450px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(59, 130, 246, 0.15))',
-                    animation: 'float 8s ease-in-out infinite 1s',
-                    filter: 'blur(40px)',
+                    background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.4), rgba(59, 130, 246, 0.35))',
+                    animation: 'float 8s ease-in-out infinite 1s, pulse 5s ease-in-out infinite 1s',
+                    filter: 'blur(100px)',
                     zIndex: 0,
                     transform: `translateY(${scrollY * -0.15}px)`
                 }}></div>
@@ -130,35 +163,130 @@ const LandingPage = () => {
                     position: 'absolute',
                     bottom: '20%',
                     left: '50%',
-                    width: '180px',
-                    height: '180px',
+                    width: '380px',
+                    height: '380px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(249, 115, 22, 0.1))',
-                    animation: 'float 10s ease-in-out infinite 2s',
-                    filter: 'blur(50px)',
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(249, 115, 22, 0.3))',
+                    animation: 'float 10s ease-in-out infinite 2s, pulse 6s ease-in-out infinite 2s',
+                    filter: 'blur(110px)',
                     zIndex: 0,
                     transform: `translateY(${scrollY * 0.2}px)`
+                }}></div>
+                {/* Additional bubbles for more depth */}
+                <div style={{
+                    position: 'absolute',
+                    top: '30%',
+                    right: '30%',
+                    width: '350px',
+                    height: '350px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(236, 72, 153, 0.3))',
+                    animation: 'float 7s ease-in-out infinite 0.5s, pulse 4.5s ease-in-out infinite 0.5s',
+                    filter: 'blur(105px)',
+                    zIndex: 0,
+                    transform: `translateY(${scrollY * 0.12}px)`
+                }}></div>
+                <div style={{
+                    position: 'absolute',
+                    bottom: '40%',
+                    left: '15%',
+                    width: '320px',
+                    height: '320px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(59, 130, 246, 0.3))',
+                    animation: 'float 9s ease-in-out infinite 1.5s, pulse 5.5s ease-in-out infinite 1.5s',
+                    filter: 'blur(95px)',
+                    zIndex: 0,
+                    transform: `translateY(${scrollY * -0.1}px)`
+                }}></div>
+                {/* Yellow/Gold bubbles */}
+                <div style={{
+                    position: 'absolute',
+                    top: '45%',
+                    left: '40%',
+                    width: '340px',
+                    height: '340px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.3))',
+                    animation: 'float 8.5s ease-in-out infinite 0.8s, pulse 5s ease-in-out infinite 0.8s',
+                    filter: 'blur(100px)',
+                    zIndex: 0,
+                    transform: `translateY(${scrollY * 0.08}px)`
+                }}></div>
+                <div style={{
+                    position: 'absolute',
+                    bottom: '15%',
+                    right: '25%',
+                    width: '300px',
+                    height: '300px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.25))',
+                    animation: 'float 7.5s ease-in-out infinite 2.2s, pulse 4.8s ease-in-out infinite 2.2s',
+                    filter: 'blur(90px)',
+                    zIndex: 0,
+                    transform: `translateY(${scrollY * -0.12}px)`
                 }}></div>
 
                 <Container style={{ position: 'relative', zIndex: 1 }}>
                     <Row className="align-items-center">
-                        <Col lg={6} className="animate-slideInLeft">
+                        <Col lg={6} ref={heroTextRef} style={{
+                            opacity: heroTextVisible ? 1 : 0,
+                            transform: heroTextVisible ? 'translateY(0)' : 'translateY(50px)',
+                            transition: 'opacity 0.8s ease-out, transform 0.8s ease-out',
+                            position: 'relative'
+                        }}>
+                            {/* Backdrop glow panel */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '-20px',
+                                left: '-20px',
+                                right: '-20px',
+                                bottom: '-20px',
+                                background: 'radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), rgba(20, 184, 166, 0.06), transparent)',
+                                borderRadius: '30px',
+                                backdropFilter: 'blur(10px)',
+                                zIndex: -1
+                            }}></div>
+
                             <h1 className="display-3 fw-bold mb-4" style={{
                                 color: 'var(--gray-900)',
-                                transform: `translateX(${Math.min(scrollY * -0.1, 0)}px)`
+                                letterSpacing: '-0.02em',
+                                lineHeight: '1.1'
                             }}>
-                                AI-Powered Kitchen
+                                <span style={{
+                                    display: 'block',
+                                    fontSize: '0.95em',
+                                    marginBottom: '0.3em'
+                                }}>AI-Powered Kitchen</span>
                                 <span className="text-gradient d-block animate-gradientShift" style={{
                                     backgroundSize: '200% 200%',
-                                    fontSize: '1.1em',
-                                    textShadow: '0 0 30px rgba(59, 130, 246, 0.3)'
-                                }}>Hygiene Monitoring</span>
+                                    fontSize: '1.15em',
+                                    fontWeight: '800',
+                                    position: 'relative',
+                                    paddingBottom: '16px'
+                                }}>
+                                    Hygiene Monitoring
+                                    {/* Animated underline */}
+                                    <span style={{
+                                        position: 'absolute',
+                                        bottom: '0',
+                                        left: '0',
+                                        width: '100%',
+                                        height: '4px',
+                                        background: 'linear-gradient(90deg, var(--primary-500), var(--accent-500), var(--primary-500))',
+                                        borderRadius: '2px',
+                                        backgroundSize: '200% 100%',
+                                        animation: 'gradientShift 3s ease infinite',
+                                        boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)'
+                                    }}></span>
+                                </span>
                             </h1>
-                            <p className="lead mb-4 animate-fadeInUp" style={{
-                                color: 'var(--gray-600)',
-                                fontSize: '1.25rem',
-                                animationDelay: '0.2s',
-                                transform: `translateX(${Math.min(scrollY * -0.05, 0)}px)`
+                            <p className="lead mb-4" style={{
+                                color: 'var(--gray-700)',
+                                fontSize: '1.3rem',
+                                lineHeight: '1.6',
+                                fontWeight: '500',
+                                maxWidth: '540px'
                             }}>
                                 Revolutionizing food safety with real-time AI surveillance.
                                 Ensure compliance, build trust, and maintain the highest hygiene standards.
@@ -186,138 +314,48 @@ const LandingPage = () => {
                                 animationDelay: '0.3s',
                                 transform: `translateY(${scrollY * 0.1}px)`
                             }}>
-                                <div className="floating-icon-container" style={{ position: 'relative' }}>
-                                    {/* Pulsing Glow Ring */}
-                                    <div style={{
+                                <div className="position-relative d-inline-block" style={{ zIndex: 2 }}>
+                                    <div className="position-relative">
+                                        <img
+                                            src={HeroImage}
+                                            alt="AI Kitchen Illustration"
+                                            className="doodle-image"
+                                        />
+                                        <div className="scan-line"></div>
+                                    </div>
+
+                                    {/* Floating Badge 1 */}
+                                    <div className="animate-float" style={{
                                         position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%, -50%)',
-                                        width: '350px',
-                                        height: '350px',
-                                        borderRadius: '50%',
-                                        background: 'radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 70%)',
-                                        animation: 'pulse 3s ease-in-out infinite',
-                                        zIndex: 0
-                                    }}></div>
-
-                                    {/* Main Central Icon */}
-                                    <div className="icon-circle" style={{
-                                        background: 'linear-gradient(135deg, var(--primary-500), var(--accent-500))',
-                                        backgroundSize: '200% 200%',
-                                        width: '300px',
-                                        height: '300px',
-                                        borderRadius: '50%',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        margin: '0 auto',
-                                        boxShadow: '0 25px 50px rgba(59, 130, 246, 0.4), 0 0 60px rgba(59, 130, 246, 0.2)',
-                                        position: 'relative',
-                                        animation: 'float 4s ease-in-out infinite, gradientShift 5s ease infinite',
-                                        zIndex: 1
+                                        top: '10%',
+                                        right: '10%',
+                                        background: 'white',
+                                        padding: '10px 20px',
+                                        borderRadius: '50px',
+                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+                                        fontWeight: 'bold',
+                                        color: 'var(--success)',
+                                        animationDelay: '1s'
                                     }}>
-                                        <i className="fas fa-utensils animate-scaleUp" style={{
-                                            fontSize: '120px',
-                                            color: 'white',
-                                            filter: 'drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3))'
-                                        }}></i>
+                                        <i className="fas fa-check-circle me-2"></i>
+                                        Safe
+                                    </div>
 
-                                        {/* Orbiting Icon 1 - AI Robot */}
-                                        <div className="orbit-icon animate-orbit" style={{
-                                            position: 'absolute',
-                                            background: 'white',
-                                            borderRadius: '50%',
-                                            width: '90px',
-                                            height: '90px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(59, 130, 246, 0.4)',
-                                            top: '50%',
-                                            left: '50%',
-                                            marginLeft: '-45px',
-                                            marginTop: '-45px',
-                                            border: '3px solid var(--primary-100)'
-                                        }}>
-                                            <i className="fas fa-robot animate-pulse" style={{
-                                                fontSize: '36px',
-                                                color: 'var(--primary-600)',
-                                                filter: 'drop-shadow(0 2px 8px rgba(59, 130, 246, 0.3))'
-                                            }}></i>
-                                        </div>
-
-                                        {/* Orbiting Icon 2 - Shield */}
-                                        <div className="orbit-icon animate-orbit-reverse" style={{
-                                            position: 'absolute',
-                                            background: 'white',
-                                            borderRadius: '50%',
-                                            width: '90px',
-                                            height: '90px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.4)',
-                                            top: '50%',
-                                            left: '50%',
-                                            marginLeft: '-45px',
-                                            marginTop: '-45px',
-                                            border: '3px solid rgba(16, 185, 129, 0.2)'
-                                        }}>
-                                            <i className="fas fa-shield-alt animate-pulse" style={{
-                                                fontSize: '36px',
-                                                color: 'var(--success)',
-                                                animationDelay: '0.5s',
-                                                filter: 'drop-shadow(0 2px 8px rgba(16, 185, 129, 0.3))'
-                                            }}></i>
-                                        </div>
-
-                                        {/* Static Decorative Icons with Enhanced Glow */}
-                                        <div style={{
-                                            position: 'absolute',
-                                            top: '-30px',
-                                            right: '20px',
-                                            background: 'linear-gradient(135deg, #ffffff, #f0f9ff)',
-                                            borderRadius: '50%',
-                                            width: '70px',
-                                            height: '70px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15), 0 0 20px rgba(20, 184, 166, 0.3)',
-                                            animation: 'float 5s ease-in-out infinite 0.5s',
-                                            border: '3px solid rgba(20, 184, 166, 0.3)'
-                                        }}>
-                                            <i className="fas fa-certificate animate-scaleUp" style={{
-                                                fontSize: '28px',
-                                                color: 'var(--accent-600)',
-                                                animationDelay: '1s',
-                                                filter: 'drop-shadow(0 2px 4px rgba(20, 184, 166, 0.3))'
-                                            }}></i>
-                                        </div>
-
-                                        <div style={{
-                                            position: 'absolute',
-                                            bottom: '-20px',
-                                            left: '30px',
-                                            background: 'linear-gradient(135deg, #ffffff, #fffbeb)',
-                                            borderRadius: '50%',
-                                            width: '70px',
-                                            height: '70px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15), 0 0 20px rgba(245, 158, 11, 0.3)',
-                                            animation: 'float 6s ease-in-out infinite 1s',
-                                            border: '3px solid rgba(245, 158, 11, 0.3)'
-                                        }}>
-                                            <i className="fas fa-chart-line animate-scaleUp" style={{
-                                                fontSize: '28px',
-                                                color: 'var(--warning)',
-                                                animationDelay: '1.5s',
-                                                filter: 'drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3))'
-                                            }}></i>
-                                        </div>
+                                    {/* Floating Badge 2 */}
+                                    <div className="animate-float" style={{
+                                        position: 'absolute',
+                                        bottom: '15%',
+                                        left: '5%',
+                                        background: 'white',
+                                        padding: '10px 20px',
+                                        borderRadius: '50px',
+                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+                                        fontWeight: 'bold',
+                                        color: 'var(--primary-600)',
+                                        animationDelay: '1.5s'
+                                    }}>
+                                        <i className="fas fa-robot me-2"></i>
+                                        AI Monitored
                                     </div>
                                 </div>
                             </div>
@@ -346,7 +384,11 @@ const LandingPage = () => {
                 }}></div>
 
                 <Container style={{ position: 'relative', zIndex: 1 }}>
-                    <div className="text-center mb-5 animate-fadeInUp">
+                    <div className="text-center mb-5" ref={achievementSectionRef} style={{
+                        opacity: achievementSectionVisible ? 1 : 0,
+                        transform: achievementSectionVisible ? 'translateY(0)' : 'translateY(60px)',
+                        transition: 'opacity 1s ease-out, transform 1s ease-out'
+                    }}>
                         <div style={{
                             display: 'inline-block',
                             padding: '0.5rem 1.5rem',
@@ -428,11 +470,10 @@ const LandingPage = () => {
                                                 position: 'relative',
                                                 background: 'linear-gradient(135deg, var(--gray-100), var(--gray-50))',
                                                 opacity: 1,
-                                                transform: revealedPhotos[idx] ? 'scale(1)' : 'scale(0.95)',
-                                                filter: revealedPhotos[idx] ? 'blur(0)' : 'blur(5px)',
+                                                transform: revealedPhotos[idx] ? 'scale(1)' : 'scale(0.98)',
                                                 transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
                                                 transitionDelay: `${idx * 0.15}s`,
-                                                boxShadow: revealedPhotos[idx] ? '0 10px 40px rgba(59, 130, 246, 0.2)' : '0 0 0 rgba(0, 0, 0, 0)',
+                                                boxShadow: revealedPhotos[idx] ? '0 10px 40px rgba(59, 130, 246, 0.2)' : '0 5px 15px rgba(0, 0, 0, 0.1)',
                                                 overflow: 'hidden',
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -615,10 +656,10 @@ const LandingPage = () => {
                 <Container>
                     <Row className="text-center g-4">
                         {[
-                            { value: '99%', label: 'Detection Accuracy', delay: '0.1s' },
-                            { value: '24/7', label: 'Real-Time Monitoring', delay: '0.2s' },
-                            { value: '100+', label: 'Hotels Registered', delay: '0.3s' },
-                            { value: '5000+', label: 'Violations Detected', delay: '0.4s' }
+                            { value: stats.detectionAccuracy || '99%', label: 'Detection Accuracy', delay: '0.1s' },
+                            { value: stats.activeMonitoring || '0', label: 'Active Kitchens', delay: '0.2s' },
+                            { value: `${stats.totalHotels}+`, label: 'Hotels Registered', delay: '0.3s' },
+                            { value: `${stats.totalViolations}+`, label: 'Violations Detected', delay: '0.4s' }
                         ].map((stat, idx) => (
                             <Col md={3} key={idx} className="animate-fadeInUp" style={{ animationDelay: stat.delay }}>
                                 <div className="glass-card card-hover" style={{

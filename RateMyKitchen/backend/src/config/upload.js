@@ -40,12 +40,39 @@ const imageFilter = (req, file, cb) => {
 };
 
 // Upload middleware
-const uploadAchievement = multer({
-    storage: achievementStorage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: imageFilter
+// Configure storage for videos
+const videoStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = 'uploads/videos';
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `video-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`);
+    }
 });
 
-module.exports = {
-    uploadAchievement
+// Filter for video files
+const videoFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('video/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only video files are allowed!'), false);
+    }
 };
+
+const uploadAchievement = multer({
+    storage: achievementStorage,
+    fileFilter: imageFilter,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+const uploadVideo = multer({
+    storage: videoStorage,
+    fileFilter: videoFilter,
+    limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+});
+
+module.exports = { uploadAchievement, uploadVideo };
