@@ -36,118 +36,159 @@ const Chatbot = () => {
         }, 1000);
     };
 
+    // --- COMPREHENSIVE KNOWLEDGE BASE ---
+    const KNOWLEDGE_BASE = [
+        // --- PLATFORM & APP INFO ---
+        {
+            keywords: ['register', 'sign up', 'join', 'create account', 'start'],
+            response: "📝 **How to Join RateMyKitchen**:\n1. Click **'Register Hotel'** on the home page.\n2. Fill in your Hotel Name, Email, Address, and Contact Info.\n3. **No documents needed initially!**\n4. Your account will be **Pending** until an Admin approves it (usually within 24 hours).",
+            priority: 2
+        },
+        {
+            keywords: ['login', 'sign in', 'access', 'password', 'forgot'],
+            response: "🔑 **Login Help**:\n- Use your registered **Email** and **Password**.\n- If you forgot your password, please contact support (feature coming soon!).\n- **Admins** and **Hotel Managers** use the same login page but see different dashboards.",
+            priority: 2
+        },
+        {
+            keywords: ['score', 'grade', 'rating', 'calculation', 'math'],
+            response: "📊 **Understanding Your Scores**:\n\n1. **Official Score (0-100)**: Set manually by Admins after a physical or detailed review.\n2. **AI Score (Real-time)**: Calculated automatically: `100 - (Total Violations × 5)`.\n\n**Grades**:\n🟢 **A (90-100)**: Excellent\n🟡 **B (80-89)**: Good\n🟠 **C (70-79)**: Needs Improvement\n🔴 **D (<70)**: At Risk of Fines/Closure",
+            priority: 3
+        },
+        {
+            keywords: ['ai', 'camera', 'detect', 'robot', 'vision', 'yolo'],
+            response: "🤖 **How Our AI Works**:\n- We use **YOLOv8 Computer Vision** technology.\n- Cameras scan your kitchen **24/7** for unsafe practices.\n- Detects: **Masks not worn**, **Pests**, **Dirty surfaces**, **Crowding**.\n- Alerts are sent instantly to your dashboard.",
+            priority: 2
+        },
+        {
+            keywords: ['report', 'complain', 'file', 'whistleblow'],
+            response: "📢 **Filing a Report**:\n- Anyone (Guests/Staff) can file an **Anonymous Report**.\n- Go to **'Report Violation'** in the navbar.\n- Upload specific evidence (Photos/Videos).\n- Admins review all reports before taking action.",
+            priority: 2
+        },
+        {
+            keywords: ['fine', 'penalty', 'money', 'cost', 'charge'],
+            response: "💸 **Fines & Penalties**:\n- Admins issue fines for repeated or critical violations.\n- **Minor**: Warnings or small fines ($50-$200).\n- **Major**: Significant fines ($500+) and potential score reduction.\n- Pay fines through the **'Actions'** tab in your dashboard.",
+            priority: 2
+        },
+
+        // --- FOOD SAFETY (FDA) ---
+        {
+            keywords: ['temp', 'temperature', 'degree', 'heat', 'cook', 'internal'],
+            response: "🌡️ **Critical Cooking Temperatures (Internal)**:\n- **Poultry** (Chicken/Turkey): **165°F (74°C)** (Instant kill)\n- **Ground Meat** (Beef/Pork): **155°F (68°C)**\n- **Whole Cuts** (Steak/Chops) & **Seafood**: **145°F (63°C)**\n- **Vegetables/Grains** (Hot holding): **135°F (57°C)**",
+            priority: 3
+        },
+        {
+            keywords: ['cooling', 'cool', 'chill', 'storage temp'],
+            response: "❄️ **Proper Cooling Method (2-Stage)**:\n1. Cool from **135°F to 70°F** within **2 hours**.\n2. Cool from **70°F to 41°F** within **4 more hours** (Total 6 hours).\n*Tip: Use ice baths, shallow pans, or blast chillers!*",
+            priority: 2
+        },
+        {
+            keywords: ['danger zone', 'bacteria', 'growth'],
+            response: "⚠️ **The Danger Zone**:\nBacteria grow fastest between **41°F and 135°F** (5°C - 57°C).\n- Keep **Hot Food** above 135°F.\n- Keep **Cold Food** below 41°F.\n- Discard food left in the Danger Zone for more than **4 hours**.",
+            priority: 2
+        },
+        {
+            keywords: ['thaw', 'defrost', 'frozen'],
+            response: "🥩 **Safe Thawing Methods**:\n1. **Refrigerator**: Best method (requires planning).\n2. **Running Water**: Submerged under cool running water (<70°F).\n3. **Microwave**: Cook immediately after thawing.\n4. **Cooking**: Thaw as part of the cooking process.\n*NEVER thaw at room temperature!*",
+            priority: 2
+        },
+        {
+            keywords: ['store', 'fridge', 'shelf', 'hierarchy', 'order'],
+            response: "📦 **Fridge Storage Hierarchy (Top to Bottom)**:\n1. **Top**: Ready-to-Eat Foods (Salads, Cooked Meats)\n2. **Seafood**\n3. **Whole Cuts** of Beef/Pork\n4. **Ground Meat**\n5. **Bottom**: Poultry (Chicken/Turkey)\n*This prevents juice dripping and cross-contamination!*",
+            priority: 3
+        },
+        {
+            keywords: ['date', 'label', 'sticker', 'mark'],
+            response: "📅 **Date Marking Rules**:\n- Ready-to-eat TCS food prepared on-site and held for >24 hours must be marked.\n- **7-Day Rule**: Can be stored for a maximum of **7 days** if held at 41°F or lower.\n- Count the day of preparation as Day 1.",
+            priority: 2
+        },
+
+        // --- HYGIENE & SANITATION ---
+        {
+            keywords: ['wash', 'hand', 'soap', 'clean hand'],
+            response: "👐 **Proper Handwashing Steps** (20 Seconds):\n1. Wet hands with warm water.\n2. Apply soap.\n3. **Scrub vigorously** for 10-15 seconds (clean under nails/between fingers).\n4. Rinse thoroughly.\n5. Dry with a **single-use paper towel**.",
+            priority: 3
+        },
+        {
+            keywords: ['glove', 'latex', 'vinyl', 'change'],
+            response: "🧤 **Glove Rules**:\n- **Wait!** Wash hands BEFORE putting on gloves.\n- Change gloves:\n  - When switching tasks (e.g., raw meat to produce).\n  - If they tear or get dirty.\n  - Every **4 hours** of continuous use.",
+            priority: 2
+        },
+        {
+            keywords: ['sick', 'ill', 'vomit', 'fever', 'symptom'],
+            response: "🤢 **Employee Illness Policy**:\n- **EXCLUDE**: Vomiting, Diarrhea, Jaundice, or Fever + Sore Throat.\n- **RESTRICT**: Sore Throat with Fever (if working with high-risk population).\n- Staff must be symptom-free for **24 hours** before returning.",
+            priority: 3
+        },
+        {
+            keywords: ['hair', 'jewelry', 'appearance', 'nail'],
+            response: "🧢 **Personal Hygiene Checklist**:\n- **Hair**: Must be restrained (hat/hairnet/beard net).\n- **Jewelry**: ONLY a plain wedding band is allowed. No watches/bracelets.\n- **Nails**: Short, clean, no polish/artificial nails (unless wearing gloves).\n- **Clothing**: Clean uniform and apron.",
+            priority: 2
+        },
+
+        // --- CLEANING & MAINTENANCE ---
+        {
+            keywords: ['sanitize', 'bleach', 'quat', 'chemical'],
+            response: "🧪 **Sanitizer Guidelines**:\n- **Chlorine (Bleach)**: 50-99 ppm (Soak for >7 sec).\n- **Quats (Quaternary Ammonium)**: Manufacturer's spec (usually 200-400 ppm, soak >30 sec).\n- **Heat**: Water at 171°F (77°C) for manual soaking (>30 sec).",
+            priority: 2
+        },
+        {
+            keywords: ['sink', 'dish', 'wash', '3 comp'],
+            response: "🚰 **3-Compartment Sink Method**:\n1. **Wash**: Hot water (>110°F) + Detergent.\n2. **Rinse**: Clean water (Remove soap).\n3. **Sanitize**: Chemical solution or Hot water.\n4. **Air Dry**: NEVER towel dry dishes!",
+            priority: 3
+        },
+        {
+            keywords: ['pest', 'rat', 'cockroach', 'mouse'],
+            response: "🚫 **Pest Control**:\n- **Deny Access**: Seal cracks, close doors/windows.\n- **Deny Food/Water**: Keep garbage covered, clean spills immediately.\n- **Deny Shelter**: Remove clutter and cardboard boxes.\n*Contact a PCO immediately if you see droppings or signs!*",
+            priority: 2
+        },
+
+        // --- KITCHEN MANAGEMENT SUGGESTIONS ---
+        {
+            keywords: ['fifo', 'rotate', 'stock'],
+            response: "🔄 **FIFO (First-In, First-Out)**:\n- Store items with the earliest use-by/expiration dates in front.\n- Use oldest stock first to minimize waste.\n- Check dates during every delivery!",
+            priority: 2
+        },
+        {
+            keywords: ['cross', 'contamination', 'separate'],
+            response: "❌ **Preventing Cross-Contamination**:\n- Use **Color-Coded Cutting Boards** (Red=Meat, Green=Veg, Blue=Fish).\n- Store raw meats **below** ready-to-eat foods.\n- Wash, Rinse, Sanitize between tasks.\n- Designate separate prep areas if possible.",
+            priority: 2
+        },
+        {
+            keywords: ['train', 'staff', 'teach', 'educate'],
+            response: "🎓 **Staff Training Tips**:\n- Hold weekly **10-minute Standups** on specific safety topics.\n- Post visual aids (handwashing charts, temp logs) at eye level.\n- Role-play scenarios: 'What do you do if the fridge breaks?'\n- Reward staff for catching safety issues!",
+            priority: 2
+        },
+
+        // --- FALLBACKS ---
+        {
+            keywords: ['hello', 'hi', 'hey', 'start'],
+            response: "👋 **Hello! I'm your RateMyKitchen Expert.**\nI can help with:\n- **App Features** (Scoring, Registration)\n- **FDA Food Code** (Temps, Storage)\n- **Kitchen Management** (Training, Cleaning)\n\n*What's on your mind?*",
+            priority: 1
+        }
+    ];
+
     const getBotResponse = (text) => {
         const lower = text.toLowerCase();
+        let bestMatch = null;
+        let highestPriority = 0;
 
-        // Temperature Rules
-        if (lower.includes('temp') || lower.includes('degree') || lower.includes('heat') || lower.includes('cold') || lower.includes('fridge') || lower.includes('freezer')) {
-            if (lower.includes('chicken') || lower.includes('poultry')) return "🍗 Poultry must be cooked to an internal temperature of *165°F (74°C)* for at least 15 seconds.";
-            if (lower.includes('beef') || lower.includes('steak')) return "🥩 Whole cuts of beef/pork should reach *145°F (63°C)* with a 3-minute rest time.";
-            if (lower.includes('ground') || lower.includes('burger')) return "🍔 Ground meats must be cooked to *155°F (68°C)*.";
-            if (lower.includes('fridge') || lower.includes('refrigerator')) return "❄️ Refrigerators must be kept at *40°F (4°C)* or below to prevent bacterial growth.";
-            if (lower.includes('freezer')) return "🧊 Freezers should be kept at *0°F (-18°C)* or lower.";
-            return "🌡️ Danger Zone: Bacteria grow rapidly between *41°F and 135°F*. Keep hot food hot (>135°F) and cold food cold (<41°F).";
+        // Iterate through Knowledge Base to find best match
+        for (const entry of KNOWLEDGE_BASE) {
+            // Check if ANY keyword matches
+            const match = entry.keywords.some(keyword => lower.includes(keyword));
+            if (match) {
+                // If match found, check priority
+                if (entry.priority > highestPriority) {
+                    highestPriority = entry.priority;
+                    bestMatch = entry;
+                }
+            }
         }
 
-        // Cleaning / Sanitizing
-        if (lower.includes('clean') || lower.includes('wash') || lower.includes('sanitize') || lower.includes('bleach') || lower.includes('soap')) {
-            if (lower.includes('hand') || lower.includes('wash hands')) return "👐 Handwashing: Scrub with warm water and soap for at least *20 seconds*. Dry with single-use towel.";
-            if (lower.includes('bleach')) return "🧪 For sanitizing surfaces: Mix *1 tablespoon* of bleach per gallon of water. Let air dry.";
-            if (lower.includes('cutting board')) return "🔪 Wash, rinse, and sanitize cutting boards after each use. Use separate boards for raw meat and produce!";
-            return "✨ The 3-Sink Method: 1. Wash (Detergent) → 2. Rinse (Water) → 3. Sanitize (Chemical/Hot Water).";
+        if (bestMatch) {
+            return bestMatch.response;
         }
 
-        // Pests
-        if (lower.includes('pest') || lower.includes('rat') || lower.includes('mouse') || lower.includes('cockroach') || lower.includes('fly')) {
-            return "🚫 Pests are a critical violation! 1. Seal all cracks. 2. Keep garbage covered. 3. Call a licensed pest control operator immediately if you see signs.";
-        }
-
-        // Storage / Cross Contamination
-        if (lower.includes('store') || lower.includes('storage') || lower.includes('shelf') || lower.includes('cross') || lower.includes('contaminat')) {
-            return "📦 Refrigerator Hierarchy (Top to Bottom): \n1. Ready-to-eat foods \n2. Seafood \n3. Whole cuts of beef/pork \n4. Ground meat \n5. Poultry (Bottom)";
-        }
-
-        // Allergens
-        if (lower.includes('allergen') || lower.includes('peanut') || lower.includes('gluten') || lower.includes('dairy')) {
-            return "⚠️ The Big 9 Allergens: Milk, Eggs, Fish, Shellfish, Tree Nuts, Peanuts, Wheat, Soy, Sesame. Always prevent cross-contact using separate tools.";
-        }
-
-        // Illness / Sickness
-        if (lower.includes('sick') || lower.includes('ill') || lower.includes('vomit') || lower.includes('diarrhea') || lower.includes('fever') || lower.includes('symptom')) {
-            return "🤢 Employee Health Policy: Staff with vomiting, diarrhea, jaundice, or fever with sore throat must be EXCLUDED from the operation. They cannot return until symptom-free for 24 hours.";
-        }
-
-        // Personal Hygiene
-        if (lower.includes('hair') || lower.includes('jewelry') || lower.includes('nail') || lower.includes('ring') || lower.includes('apron')) {
-            return "🧢 Personal Hygiene: \n1. Hair restraints are required. \n2. No jewelry on arms/hands (except plain wedding band). \n3. Nails must be short and clean (no polish/fake nails). \n4. Remove aprons before using the restroom.";
-        }
-
-        // First Aid / Emergencies
-        if (lower.includes('burn') || lower.includes('cut') || lower.includes('wound') || lower.includes('blood') || lower.includes('choke')) {
-            return "🚑 First Aid: \n- Cuts: Cover with brightness bandage AND a finger cot/glove. \n- Burns: Run under cool water (no ice). \n- Choking: Perform abdominal thrusts (Heimlich). Call 911 for emergencies.";
-        }
-
-        // Nutrition / Healthy Options
-        if (lower.includes('health') || lower.includes('nutrition') || lower.includes('calorie') || lower.includes('diet') || lower.includes('vegan')) {
-            return "🥗 Healthy Kitchen Tips: \n- Use separate fryers for gluten-free items. \n- Offer steamed veggies as sides. \n- Label calories clearly on menus (FDA requirement for chains >20 locations). \n- Reduce salt by using fresh herbs/spices!";
-        }
-
-        // Platform - General Info (VERIFIED)
-        if (lower.includes('what is') || lower.includes('about') || lower.includes('app') || lower.includes('site') || lower.includes('platform')) {
-            return "🏨 **RateMyKitchen** is an AI-powered hygiene monitoring platform. We use **YOLOv8 computer vision** to detect kitchen violations in real-time, 24/7.";
-        }
-
-        // Platform - Registration (VERIFIED: RegisterPage.jsx)
-        if (lower.includes('register') || lower.includes('sign up') || lower.includes('join') || lower.includes('create account')) {
-            return "📝 **How to Join**: \n1. Go to **'Register Hotel'**. \n2. Enter Name, Email, Address, and Contact. \n3. **No documents needed initially.** \n4. Wait for **Admin Approval** to access your dashboard.";
-        }
-
-        // Platform - Reporting (VERIFIED: ReportPage.jsx)
-        if (lower.includes('report') || lower.includes('complain') || lower.includes('violation') || lower.includes('anonymous')) {
-            return "📢 **File a Report**: \n- Go to **'Report Violation'**. \n- Upload **JPG, PNG, MP4, or MOV** (Max 10MB). \n- Describe the issue. \n- **100% Anonymous** & reviewed by Admins.";
-        }
-
-        // Platform - Scoring System (VERIFIED: HotelDashboard.jsx + AdminDashboard.jsx)
-        if (lower.includes('score') || lower.includes('grade') || lower.includes('rating') || lower.includes('ranking') || lower.includes('mark')) {
-            return "📊 **Two Scores**: \n1. **Official Score**: Set manually by Admins (0-100). \n2. **AI Score**: Calculated as `100 - (Violations × 10)`. \n\n**Grades**: \n🟢 **A (90+)** \n🟡 **B (80-89)** \n🟠 **C (70-79)** \n🔴 **D (<70)**";
-        }
-
-        // Platform - AI / Technical (VERIFIED: inference.py)
-        if (lower.includes('ai') || lower.includes('robot') || lower.includes('camera') || lower.includes('detect') || lower.includes('yolo')) {
-            return "🤖 **My AI Brain**: \nI use **YOLOv8** models to analyze video feeds. I scan frames every **1 second** to detect unsafe practices like missing masks, pests, or dirty surfaces.";
-        }
-
-        // Dashboard Info
-        if (lower.includes('dashboard') || lower.includes('feature') || lower.includes('tool')) {
-            return "💻 **Dashboard**: \n- See your **Real-time AI Score**. \n- View **Total Fines** ($). \n- Check **Last Inspection Date**. \n- Read **Admin Memos**.";
-        }
-
-        // Illness / Sickness
-        if (lower.includes('sick') || lower.includes('ill') || lower.includes('vomit') || lower.includes('diarrhea') || lower.includes('fever') || lower.includes('symptom')) {
-            return "🤢 **Employee Health**: Staff with vomiting, diarrhea, jaundice, or fever + sore throat must be **EXCLUDED** until symptom-free for 24hrs.";
-        }
-
-        // Personal Hygiene
-        if (lower.includes('hair') || lower.includes('jewelry') || lower.includes('nail') || lower.includes('ring') || lower.includes('apron')) {
-            return "🧢 **Hygiene Rules**: \n- Wear Hair Restraints. \n- No jewelry on arms/hands (plain bands ok). \n- Short, clean nails (no polish). \n- Remove aprons before restroom use.";
-        }
-
-        // First Aid
-        if (lower.includes('burn') || lower.includes('cut') || lower.includes('wound') || lower.includes('blood') || lower.includes('choke')) {
-            return "🚑 **First Aid**: \n- **Cuts**: Bandage + Finger Cot/Glove. \n- **Burns**: Cool water (NO ice). \n- **Choking**: Heimlich Maneuver. \n*Call 911 for emergencies.*";
-        }
-
-        // Nutrition
-        if (lower.includes('health') || lower.includes('nutrition') || lower.includes('calorie') || lower.includes('diet') || lower.includes('vegan')) {
-            return "🥗 **Healthy Tips**: \n- Separate fryers for gluten-free. \n- Offer steamed sides. \n- Label calories. \n- Reduce salt usage.";
-        }
-
-        // Default / Greeting
-        if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
-            return "Hello! 👋 I'm the **RateMyKitchen Expert**. \nI know EXACTLY how this app works. Ask me about **Registration**, **AI Detection**, **Scoring Math**, or **Food Safety**!";
-        }
-
-        return "🤔 I can explain **App Features** (e.g., 'How is AI score calculated?') or **Hygiene Rules**. What do you need?";
+        return "🤔 I'm not sure about that specific term. Try asking about **'Temperatures'**, **'Cleaning'**, **'Storage'**, or **'App Scoring'**!";
     };
 
     return (

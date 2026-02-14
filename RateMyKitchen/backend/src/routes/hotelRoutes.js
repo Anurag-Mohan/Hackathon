@@ -13,5 +13,6 @@ router.use(authMiddleware, hotelOnly);
 router.get('/profile', hotelController.getProfile);
 router.get('/violations', hotelController.getViolations);
 router.get('/fines', hotelController.getFines);
+router.get('/report', hotelController.generateReport);
 
 module.exports = router;

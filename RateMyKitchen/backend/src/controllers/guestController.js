@@ -67,27 +67,37 @@ exports.submitReport = async (req, res) => {
 };
 
 // Search hotels by name (public endpoint)
+// Search hotels by name (public endpoint)
 exports.searchHotels = async (req, res) => {
     try {
         const { query } = req.query;
+        console.log(`[searchHotels] Received query: "${query}"`);
 
         if (!query || query.trim().length < 2) {
+            console.warn(`[searchHotels] Query too short.`);
             return res.status(400).json({ message: 'Search query must be at least 2 characters' });
         }
 
         const hotels = await Hotel.findAll({
             where: {
-                hotel_name: {
-                    [Op.like]: `%${query}%`
-                },
-                is_verified: 1 // Only show verified hotels
+                [Op.and]: [
+                    // Case-insensitive search
+                    require('sequelize').where(
+                        require('sequelize').fn('LOWER', require('sequelize').col('hotel_name')),
+                        'LIKE',
+                        '%' + query.toLowerCase() + '%'
+                    ),
+                    { is_verified: 1 }
+                ]
             },
             attributes: ['id', 'hotel_name', 'address', 'contact', 'hygiene_score', 'hygiene_status', 'violation_count', 'fine_amount', 'last_inspection_date'],
             limit: 10
         });
 
+        console.log(`[searchHotels] Found ${hotels.length} results for "${query}"`);
         res.json(hotels);
     } catch (err) {
+        console.error(`[searchHotels] Error:`, err);
         res.status(500).json({ error: err.message });
     }
 };

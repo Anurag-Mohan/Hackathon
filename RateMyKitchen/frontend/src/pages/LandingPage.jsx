@@ -1,10 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Button } from 'react-bootstrap';
+import { Container, Row, Col, Button, Modal, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import HeroImage from '../assets/hero-image.png';
+
+const AchievementsModal = ({ show, onHide }) => {
+    const [achievements, setAchievements] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (show) {
+            setLoading(true);
+            fetch('http://localhost:5001/api/stats/achievements/all')
+                .then(res => res.json())
+                .then(data => {
+                    setAchievements(data);
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error("Error fetching all achievements:", err);
+                    setLoading(false);
+                });
+        }
+    }, [show]);
+
+    return (
+        <Modal show={show} onHide={onHide} size="xl" centered>
+            <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, var(--primary-600), var(--accent-600))', color: 'white' }}>
+                <Modal.Title><i className="fas fa-trophy me-2"></i>All Achievements</Modal.Title>
+            </Modal.Header>
+            <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto', background: 'var(--gray-50)' }}>
+                {loading ? (
+                    <div className="text-center py-5">
+                        <Spinner animation="border" variant="primary" />
+                    </div>
+                ) : (
+                    <Row className="g-4">
+                        {achievements.map((achievement, idx) => (
+                            <Col md={4} lg={3} key={achievement.id || idx}>
+                                <div className="achievement-card" style={{
+                                    background: 'white',
+                                    borderRadius: '16px',
+                                    padding: '1.5rem',
+                                    boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                }}>
+                                    <div style={{
+                                        width: '100%',
+                                        height: '180px',
+                                        borderRadius: '12px',
+                                        marginBottom: '1rem',
+                                        overflow: 'hidden',
+                                        position: 'relative',
+                                        background: 'var(--gray-100)'
+                                    }}>
+                                        {achievement.image_path ? (
+                                            <img src={`http://localhost:5001${achievement.image_path}`} alt={achievement.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <div className="d-flex align-items-center justify-content-center h-100">
+                                                <i className={`fas fa-${achievement.icon || 'trophy'} fa-3x text-primary`}></i>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h5 className="fw-bold mb-2">{achievement.title}</h5>
+                                    <p className="text-muted small mb-3 flex-grow-1">{achievement.description || achievement.desc}</p>
+                                    <div className="d-flex justify-content-between align-items-center mt-auto">
+                                        <small className="text-muted">
+                                            <i className="fas fa-calendar-alt me-1"></i>
+                                            {achievement.year || '2024'}
+                                        </small>
+                                        <div className="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">
+                                            Verified
+                                        </div>
+                                    </div>
+                                </div>
+                            </Col>
+                        ))}
+                    </Row>
+                )}
+            </Modal.Body>
+        </Modal>
+    );
+};
 
 const LandingPage = () => {
     const [scrollY, setScrollY] = useState(0);
@@ -24,6 +105,9 @@ const LandingPage = () => {
     const heroTextRef = React.useRef(null);
     const achievementSectionRef = React.useRef(null);
     const achievementCardRefs = React.useRef([]);
+
+    // New state for modal
+    const [showAchievementsModal, setShowAchievementsModal] = useState(false);
 
     // Fetch achievements and stats from API
     useEffect(() => {
@@ -155,7 +239,6 @@ const LandingPage = () => {
 
     return (
         <>
-
             <Navbar />
 
             {/* Hero Section */}
@@ -613,6 +696,7 @@ const LandingPage = () => {
                         <Button
                             size="lg"
                             variant="outline-primary"
+                            onClick={() => setShowAchievementsModal(true)}
                             style={{
                                 borderWidth: '2px',
                                 borderRadius: '12px',
@@ -866,10 +950,10 @@ const LandingPage = () => {
                     </Link>
                 </Container>
             </section>
+
+            <AchievementsModal show={showAchievementsModal} onHide={() => setShowAchievementsModal(false)} />
         </>
     );
 };
 
 export default LandingPage;
-
-

@@ -29,6 +29,49 @@ const AdminDashboard = () => {
         fine_amount: ''
     });
 
+    // Report Modal State
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportDateRange, setReportDateRange] = useState({ startDate: '', endDate: '' });
+
+    const handleOpenReportModal = (hotel) => {
+        setSelectedHotel(hotel);
+        setReportDateRange({ startDate: '', endDate: '' }); // Reset dates
+        setShowReportModal(true);
+    };
+
+    const handleGenerateReport = (e) => {
+        if (e) e.preventDefault();
+        const token = localStorage.getItem('token');
+
+        let url = `http://localhost:5001/api/admin/hotels/${selectedHotel.id}/report?`;
+        if (reportDateRange.startDate) url += `startDate=${reportDateRange.startDate}&`;
+        if (reportDateRange.endDate) url += `endDate=${reportDateRange.endDate}`;
+
+        fetch(url, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(async response => {
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Download failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const tempUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = tempUrl;
+                a.download = `Report_${selectedHotel.hotel_name.replace(/\s+/g, '_')}.pdf`;
+                a.click();
+                window.URL.revokeObjectURL(tempUrl);
+                setShowReportModal(false);
+            })
+            .catch(err => {
+                console.error("Report download failed:", err);
+                alert(`Failed to download report: ${err.message}`);
+            });
+    };
+
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -85,6 +128,18 @@ const AdminDashboard = () => {
             fetchHotels();
         } catch (err) {
             alert('Error rejecting hotel');
+        }
+    };
+
+    const handleDeleteHotel = async (id, name) => {
+        if (window.confirm(`Are you sure you want to permanently delete "${name}"? This action cannot be undone.`)) {
+            try {
+                await axios.delete(`http://localhost:5001/api/admin/hotels/${id}`, config);
+                fetchHotels(); // Refresh list immediately
+                alert('Hotel deleted successfully');
+            } catch (err) {
+                alert('Error deleting hotel: ' + (err.response?.data?.message || err.message));
+            }
         }
     };
 
@@ -349,6 +404,7 @@ const AdminDashboard = () => {
                                             <th>Hygiene</th>
                                             <th>Violations</th>
                                             <th>Actions</th>
+                                            <th>Delete</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -400,18 +456,42 @@ const AdminDashboard = () => {
                                                                 size="sm"
                                                                 variant="outline-primary"
                                                                 onClick={() => handleViewViolations(hotel)}
+                                                                title="Monitor"
                                                             >
-                                                                <i className="fas fa-video me-1"></i>Monitor
+                                                                <i className="fas fa-video"></i>
                                                             </Button>
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline-warning"
                                                                 onClick={() => handleOpenRatingModal(hotel)}
+                                                                title="Rate"
                                                             >
-                                                                <i className="fas fa-star me-1"></i>Rating
+                                                                <i className="fas fa-star"></i>
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline-info"
+                                                                title="Download Report"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    handleOpenReportModal(hotel);
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-file-pdf"></i>
                                                             </Button>
                                                         </div>
                                                     )}
+                                                </td>
+                                                <td>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline-danger"
+                                                        className="ms-2"
+                                                        onClick={() => handleDeleteHotel(hotel.id, hotel.hotel_name)}
+                                                        title="Delete Hotel"
+                                                    >
+                                                        <i className="fas fa-trash"></i>
+                                                    </Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -619,7 +699,7 @@ const AdminDashboard = () => {
                                 <Col md={6}>
                                     <Form.Group className="mb-3">
                                         <Form.Label style={{ fontWeight: '600', color: 'var(--gray-700)' }}>
-                                            <i className="fas fa-dollar-sign me-2"></i>Fine Amount
+                                            <i className="fas fa-rupee-sign me-2"></i>Fine Amount
                                         </Form.Label>
                                         <Form.Control
                                             type="number"
@@ -632,7 +712,7 @@ const AdminDashboard = () => {
                                             style={{ borderRadius: '8px', padding: '0.75rem' }}
                                         />
                                         <Form.Text className="text-muted">
-                                            Total fines imposed (in currency)
+                                            Total fines imposed (in ₹)
                                         </Form.Text>
                                     </Form.Group>
                                 </Col>
@@ -654,6 +734,46 @@ const AdminDashboard = () => {
                             }}
                         >
                             <i className="fas fa-save me-2"></i>Update Rating
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
+
+                {/* Report Generation Modal */}
+                <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered>
+                    <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: 'white' }}>
+                        <Modal.Title><i className="fas fa-file-pdf me-2"></i>Generate Compliance Report</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        <p className="text-muted mb-4">Select a date range for the <strong>{selectedHotel?.hotel_name}</strong> report.</p>
+                        <Form>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Start Date</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            value={reportDateRange.startDate}
+                                            onChange={(e) => setReportDateRange({ ...reportDateRange, startDate: e.target.value })}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>End Date</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            value={reportDateRange.endDate}
+                                            onChange={(e) => setReportDateRange({ ...reportDateRange, endDate: e.target.value })}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </Form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowReportModal(false)}>Close</Button>
+                        <Button variant="primary" onClick={handleGenerateReport}>
+                            <i className="fas fa-download me-2"></i>Download PDF
                         </Button>
                     </Modal.Footer>
                 </Modal>

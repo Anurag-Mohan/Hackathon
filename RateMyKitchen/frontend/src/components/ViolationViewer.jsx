@@ -14,9 +14,7 @@ const ViolationViewer = ({ show, onHide, hotelId, hotelName }) => {
     const [memoMessage, setMemoMessage] = useState('');
     const [actionStatus, setActionStatus] = useState(null);
 
-    // Report States
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+
 
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -77,14 +75,7 @@ const ViolationViewer = ({ show, onHide, hotelId, hotelName }) => {
         }
     };
 
-    const handleDownloadReport = () => {
-        let url = `http://localhost:5001/api/admin/hotels/${hotelId}/report?`;
-        if (startDate) url += `startDate=${startDate}&`;
-        if (endDate) url += `endDate=${endDate}`;
 
-        // Open in new window to trigger download
-        window.open(url, '_blank', 'noopener,noreferrer');
-    };
 
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
@@ -215,45 +206,7 @@ const ViolationViewer = ({ show, onHide, hotelId, hotelName }) => {
                         </Row>
                     </Tab>
 
-                    {/* Reports Tab */}
-                    <Tab eventKey="reports" title={<span><i className="fas fa-file-pdf me-2"></i>Reports</span>}>
-                        <Card className="border-0 shadow-sm">
-                            <Card.Body className="p-5 text-center">
-                                <i className="fas fa-file-alt fa-4x text-primary mb-4"></i>
-                                <h4 className="mb-3">Generate Compliance Report</h4>
-                                <p className="text-muted mb-4">
-                                    Download a detailed PDF report including violation history, fines issued, and current hygiene statistics.
-                                </p>
 
-                                <Row className="justify-content-center mb-4">
-                                    <Col md={4}>
-                                        <Form.Group>
-                                            <Form.Label>From Date</Form.Label>
-                                            <Form.Control
-                                                type="date"
-                                                value={startDate}
-                                                onChange={(e) => setStartDate(e.target.value)}
-                                            />
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={4}>
-                                        <Form.Group>
-                                            <Form.Label>To Date</Form.Label>
-                                            <Form.Control
-                                                type="date"
-                                                value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
-                                            />
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
-
-                                <Button variant="primary" size="lg" onClick={handleDownloadReport}>
-                                    <i className="fas fa-download me-2"></i>Download PDF Report
-                                </Button>
-                            </Card.Body>
-                        </Card>
-                    </Tab>
 
                 </Tabs>
             </Modal.Body>

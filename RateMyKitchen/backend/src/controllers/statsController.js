@@ -21,12 +21,24 @@ exports.getStatsSummary = async (req, res) => {
     }
 };
 
-// Get latest achievements for landing page
+// Get latest achievements for landing page (limit 3)
 exports.getLatestAchievements = async (req, res) => {
     try {
         const achievements = await Achievement.findAll({
             order: [['created_at', 'DESC']],
             limit: 3
+        });
+        res.json(achievements);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get all achievements for modal
+exports.getAllAchievements = async (req, res) => {
+    try {
+        const achievements = await Achievement.findAll({
+            order: [['created_at', 'DESC']]
         });
         res.json(achievements);
     } catch (err) {

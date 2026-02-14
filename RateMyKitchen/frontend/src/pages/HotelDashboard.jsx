@@ -12,16 +12,56 @@ const HotelDashboard = () => {
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
+    // Filter State
+    const [filter, setFilter] = useState('all'); // 'all', 'today', 'week', 'month'
+
+    // Sound Effect (Pleasant Chime)
+    const playNotificationSound = () => {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const primary = audioContext.createOscillator();
+        const secondary = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        // Bell-like tones
+        primary.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+        primary.type = 'triangle';
+        secondary.frequency.setValueAtTime(1046.50, audioContext.currentTime); // C6
+        secondary.type = 'sine';
+
+        // Mix
+        primary.connect(gainNode);
+        secondary.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Envelope
+        primary.start();
+        secondary.start();
+
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05); // Attack
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.5); // Decay (Long)
+
+        primary.stop(audioContext.currentTime + 1.5);
+        secondary.stop(audioContext.currentTime + 1.5);
+    };
+
+    const prevViolationsRef = React.useRef([]);
+
     useEffect(() => {
         fetchProfile();
         fetchViolations();
+
+        // Polling every 3 seconds for real-time updates
+        const interval = setInterval(() => {
+            fetchViolations(true);
+        }, 3000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const fetchProfile = async () => {
         try {
-            console.log('Fetching profile...');
             const res = await axios.get('http://localhost:5001/api/hotel/profile', config);
-            console.log('Profile fetched:', res.data);
             setHotel(res.data);
         } catch (err) {
             console.error('Error fetching profile:', err);
@@ -29,17 +69,50 @@ const HotelDashboard = () => {
         }
     };
 
-    const fetchViolations = async () => {
+    const fetchViolations = async (isPolling = false) => {
         try {
-            console.log('Fetching violations...');
             const res = await axios.get('http://localhost:5001/api/hotel/violations', config);
-            console.log('Violations fetched:', res.data);
-            setViolations(res.data);
+            const newViolations = res.data;
+
+            // Check for new violations
+            if (isPolling && newViolations.length > prevViolationsRef.current.length) {
+                playNotificationSound();
+                // Optional: Show toast or visual cue
+            }
+
+            setViolations(newViolations);
+            prevViolationsRef.current = newViolations;
+
         } catch (err) {
             console.error('Error fetching violations:', err);
-            setError('Failed to load violations: ' + (err.response?.data?.message || err.message));
+            // Don't set error on polling to avoid flickering UI if one request fails momentarily
+            if (!isPolling) setError('Failed to load violations: ' + (err.response?.data?.message || err.message));
         }
     };
+
+    // Filter Logic
+    const getFilteredViolations = () => {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        return violations.filter(v => {
+            const date = new Date(v.detected_at);
+            if (filter === 'today') {
+                return date >= startOfToday;
+            }
+            if (filter === 'week') {
+                const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                return date >= oneWeekAgo;
+            }
+            if (filter === 'month') {
+                const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                return date >= oneMonthAgo;
+            }
+            return true;
+        });
+    };
+
+    const filteredViolations = getFilteredViolations();
 
     const getAIScore = () => {
         const score = Math.max(0, 100 - (hotel.violation_count || 0) * 10);
@@ -98,6 +171,30 @@ const HotelDashboard = () => {
                                 </p>
                             </div>
                         )}
+                        <div className="ms-3">
+                            <a
+                                href="http://localhost:5001/api/hotel/report"
+                                className="btn btn-outline-primary"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    const token = localStorage.getItem('token');
+                                    fetch('http://localhost:5001/api/hotel/report', {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    })
+                                        .then(response => response.blob())
+                                        .then(blob => {
+                                            const url = window.URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `Compliance_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+                                            a.click();
+                                        })
+                                        .catch(err => console.error("Report download failed:", err));
+                                }}
+                            >
+                                <i className="fas fa-file-pdf me-2"></i>Download Report
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -211,11 +308,11 @@ const HotelDashboard = () => {
                                     justifyContent: 'center',
                                     boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3)'
                                 }}>
-                                    <i className="fas fa-dollar-sign fa-2x" style={{ color: 'white' }}></i>
+                                    <i className="fas fa-rupee-sign fa-2x" style={{ color: 'white' }}></i>
                                 </div>
                             </div>
                             <h2 className="mb-1 fw-bold" style={{ color: '#ef4444' }}>
-                                ${parseFloat(hotel.fine_amount || 0).toFixed(2)}
+                                ₹{parseFloat(hotel.fine_amount || 0).toFixed(2)}
                             </h2>
                             <h6 className="mb-0" style={{ color: 'var(--gray-900)' }}>Total Fines</h6>
                             <small style={{ color: 'var(--gray-600)', fontSize: '0.75rem' }}>Imposed by admin</small>
@@ -295,10 +392,24 @@ const HotelDashboard = () => {
                 {/* Recent Violations */}
                 <Row>
                     <Col md={12}>
-                        <h4 className="mb-3" style={{ color: 'var(--gray-900)' }}>
-                            <i className="fas fa-history me-2" style={{ color: 'var(--primary-600)' }}></i>
-                            Recent Violations
-                        </h4>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h4 style={{ color: 'var(--gray-900)', margin: 0 }}>
+                                <i className="fas fa-history me-2" style={{ color: 'var(--primary-600)' }}></i>
+                                Recent Violations
+                            </h4>
+                            <div className="btn-group">
+                                {['all', 'today', 'week', 'month'].map((f) => (
+                                    <button
+                                        key={f}
+                                        className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                        onClick={() => setFilter(f)}
+                                        style={{ textTransform: 'capitalize' }}
+                                    >
+                                        {f}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <GlassCard>
                             {violations.length === 0 ? (
                                 <div className="text-center py-5">
@@ -308,17 +419,30 @@ const HotelDashboard = () => {
                                 </div>
                             ) : (
                                 <div className="row g-3">
-                                    {violations.map(v => (
-                                        <div key={v.id} className="col-md-6">
+                                    {filteredViolations.map((v, index) => (
+                                        <div key={v.id} className="col-md-6 animate-fadeInUp" style={{ animationDelay: `${index * 0.1}s` }}>
                                             <div className="p-3" style={{
-                                                background: 'white',
+                                                background: (index === 0 && filter === 'all') ? 'linear-gradient(135deg, #fff, #fff0f0)' : 'white', // Highlight first item only in 'all' view
                                                 borderRadius: '12px',
-                                                border: '1px solid var(--gray-200)',
-                                                boxShadow: 'var(--shadow-sm)',
-                                                transition: 'all var(--transition-base)'
+                                                border: index === 0 ? '2px solid #ef4444' : '1px solid var(--gray-200)',
+                                                boxShadow: index === 0 ? '0 10px 25px rgba(239, 68, 68, 0.15)' : 'var(--shadow-sm)',
+                                                transition: 'all var(--transition-base)',
+                                                position: 'relative'
                                             }}
                                                 onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-md)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-sm)'}>
+                                                onMouseLeave={(e) => e.currentTarget.style.boxShadow = index === 0 ? '0 10px 25px rgba(239, 68, 68, 0.15)' : 'var(--shadow-sm)'}>
+
+                                                {index === 0 && (
+                                                    <Badge bg="danger" style={{
+                                                        position: 'absolute',
+                                                        top: '-10px',
+                                                        right: '15px',
+                                                        boxShadow: '0 4px 6px rgba(239, 68, 68, 0.3)',
+                                                        animation: 'pulse 2s infinite'
+                                                    }}>
+                                                        LATEST
+                                                    </Badge>
+                                                )}
                                                 <div className="d-flex gap-3">
                                                     <div className="flex-shrink-0">
                                                         <img
@@ -356,7 +480,7 @@ const HotelDashboard = () => {
                         </GlassCard>
                     </Col>
                 </Row>
-            </Container>
+            </Container >
         </>
     );
 };

@@ -26,6 +26,7 @@ router.put('/hotels/:id/approve', (req, res, next) => {
     next();
 }, adminController.approveHotel);
 router.put('/hotels/:id/reject', adminController.rejectHotel);
+router.delete('/hotels/:id', adminController.deleteHotel);
 router.put('/hotels/:id/rating', adminController.updateHotelRating);
 router.post('/fine', adminController.issueFine);
 router.post('/memo', adminController.sendMemo);
