@@ -10,9 +10,13 @@ import AdminDashboard from './pages/AdminDashboard';
 import HotelDashboard from './pages/HotelDashboard';
 import ReportPage from './pages/ReportPage';
 
+import Chatbot from './components/Chatbot';
+import CursorTrail from './components/CursorTrail';
+
 function App() {
   return (
     <Router>
+      <CursorTrail />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/register-hotel" element={<RegisterPage />} />
@@ -23,6 +27,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/hotel" element={<HotelDashboard />} />
       </Routes>
+      <Chatbot />
     </Router>
   );
 }

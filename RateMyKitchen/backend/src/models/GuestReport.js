@@ -32,6 +32,10 @@ const GuestReport = sequelize.define('GuestReport', {
     submitted_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
+    },
+    ai_analysis: {
+        type: DataTypes.JSON,
+        comment: 'Stores detected violations from AI model'
     }
 });
 

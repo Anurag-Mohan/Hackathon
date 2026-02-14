@@ -1,4 +1,5 @@
 const { Hotel, Violation, Fine, Memo, GuestReport, Achievement } = require('../models');
+const sequelize = require('sequelize');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
@@ -120,8 +121,64 @@ exports.sendMemo = async (req, res) => {
 
 exports.getGuestReports = async (req, res) => {
     try {
-        const reports = await GuestReport.findAll();
+        const reports = await GuestReport.findAll({
+            order: [['submitted_at', 'DESC']]
+        });
         res.json(reports);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.updateReportStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'Reviewed', 'Action Taken', 'Rejected'
+
+        const report = await GuestReport.findByPk(id);
+        if (!report) return res.status(404).json({ message: 'Report not found' });
+
+        // If action is taken, try to link to a hotel and create a violation
+        let hotelLinked = false;
+        if (status === 'Action Taken' && report.status !== 'Action Taken') {
+            // Try exact match first, then case-insensitive
+            const hotel = await Hotel.findOne({
+                where: sequelize.where(
+                    sequelize.fn('lower', sequelize.col('hotel_name')),
+                    sequelize.fn('lower', report.hotel_name_input)
+                )
+            });
+
+            if (hotel) {
+                hotelLinked = true;
+                // Create Stats
+                await Violation.create({
+                    hotel_id: hotel.id,
+                    violation_type: 'Reported by Guest',
+                    severity: 'High',
+                    snapshot_url: report.media_url,
+                    detected_at: new Date()
+                });
+
+                // Update Counters
+                await hotel.increment('violation_count');
+
+                // Recalculate Hygiene Score (Simple Logic: -10 per violation)
+                if (hotel.hygiene_score > 0) {
+                    hotel.hygiene_score = Math.max(0, hotel.hygiene_score - 10);
+                }
+                await hotel.save();
+            }
+        }
+
+        report.status = status;
+        await report.save();
+
+        res.json({
+            message: hotelLinked ? 'Report validated & stats updated!' : 'Report status updated (Hotel not found in DB)',
+            report,
+            hotelLinked
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -1,6 +1,10 @@
 const { GuestReport, Hotel, Violation } = require('../models');
 const { Op } = require('sequelize');
 
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
 exports.submitReport = async (req, res) => {
     try {
         const { hotel_name_input, google_maps_link, description } = req.body;
@@ -10,12 +14,50 @@ exports.submitReport = async (req, res) => {
             return res.status(400).json({ message: 'Image or video proof is required' });
         }
 
+        let ai_analysis = null;
+
+        // Run AI Analysis if it's an image
+        if (req.file && req.file.mimetype.startsWith('image')) {
+            const imagePath = path.join(__dirname, '../../uploads', req.file.filename);
+            const scriptPath = path.join(__dirname, '../../yolo_model/analyze_image.py');
+
+            try {
+                const pythonProcess = spawn('python', [scriptPath, imagePath]);
+
+                const result = await new Promise((resolve, reject) => {
+                    let dataString = '';
+                    pythonProcess.stdout.on('data', (data) => dataString += data.toString());
+                    pythonProcess.stderr.on('data', (data) => console.error(`AI Error: ${data}`));
+
+                    pythonProcess.on('close', (code) => {
+                        if (code === 0) {
+                            try {
+                                resolve(JSON.parse(dataString));
+                            } catch (e) {
+                                console.error("Failed to parse AI output", e);
+                                resolve(null);
+                            }
+                        } else {
+                            resolve(null);
+                        }
+                    });
+                });
+
+                if (result && !result.error) {
+                    ai_analysis = result;
+                }
+            } catch (aiError) {
+                console.error("AI Analysis failed:", aiError);
+            }
+        }
+
         const report = await GuestReport.create({
             hotel_name_input,
             google_maps_link,
             media_url,
             media_type: req.file.mimetype.startsWith('video') ? 'video' : 'image',
-            description
+            description,
+            ai_analysis
         });
 
         res.status(201).json({ message: 'Report submitted successfully', report });

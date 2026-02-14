@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import CursorTrail from '../components/CursorTrail';
+
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import HeroImage from '../assets/hero-image.png';
 
@@ -155,7 +155,7 @@ const LandingPage = () => {
 
     return (
         <>
-            <CursorTrail />
+
             <Navbar />
 
             {/* Hero Section */}

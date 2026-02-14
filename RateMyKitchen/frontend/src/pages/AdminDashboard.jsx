@@ -35,6 +35,14 @@ const AdminDashboard = () => {
     useEffect(() => {
         fetchHotels();
         fetchReports();
+
+        // Refresh stats every 2 seconds
+        const interval = setInterval(() => {
+            fetchHotels();
+            fetchReports();
+        }, 2000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const fetchHotels = async () => {
@@ -436,12 +444,31 @@ const AdminDashboard = () => {
                                                 </h5>
                                                 <small style={{ color: 'var(--gray-500)' }}>
                                                     <i className="fas fa-clock me-1"></i>
-                                                    {new Date(report.createdAt).toLocaleString()}
+                                                    {new Date(report.submitted_at || report.createdAt).toLocaleString()}
                                                 </small>
                                             </div>
-                                            <Badge bg="info">{report.status}</Badge>
+                                            <Badge bg={
+                                                report.status === 'Action Taken' ? 'success' :
+                                                    report.status === 'Rejected' ? 'danger' : 'warning'
+                                            }>{report.status}</Badge>
                                         </div>
                                         <p style={{ color: 'var(--gray-700)' }}>{report.description}</p>
+
+                                        {/* AI Analysis Tags */}
+                                        {report.ai_analysis && report.ai_analysis.length > 0 && (
+                                            <div className="mb-3 p-3 text-start" style={{ background: '#fef2f2', borderRadius: '8px', borderLeft: '4px solid #ef4444' }}>
+                                                <h6 className="fw-bold text-danger mb-2"><i className="fas fa-robot me-2"></i>AI Detected Violations:</h6>
+                                                <div className="d-flex flex-wrap gap-2">
+                                                    {report.ai_analysis.map((violation, idx) => (
+                                                        <Badge key={idx} bg="danger" className="p-2">
+                                                            {violation.type || violation.class}
+                                                            <span className="opacity-75 ms-1">({Math.round((violation.confidence || 0) * 100)}%)</span>
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {report.google_maps_link && (
                                             <a href={report.google_maps_link} target="_blank" rel="noreferrer"
                                                 className="d-inline-block mb-3"
@@ -451,7 +478,7 @@ const AdminDashboard = () => {
                                             </a>
                                         )}
                                         {report.media_url && (
-                                            <div>
+                                            <div className="mb-3">
                                                 {report.media_type === 'image' ? (
                                                     <img src={`http://localhost:5001${report.media_url}`}
                                                         alt="Proof"
@@ -461,6 +488,43 @@ const AdminDashboard = () => {
                                                         controls
                                                         style={{ maxWidth: '300px', borderRadius: '12px', boxShadow: 'var(--shadow-md)' }} />
                                                 )}
+                                            </div>
+                                        )}
+
+                                        {/* Admin Actions */}
+                                        {report.status === 'Pending' && (
+                                            <div className="d-flex gap-2 mt-3 pt-3 border-top">
+                                                <Button
+                                                    size="sm"
+                                                    variant="success"
+                                                    onClick={async () => {
+                                                        try {
+                                                            const res = await axios.put(`http://localhost:5001/api/admin/reports/${report.id}/action`, { status: 'Action Taken' }, config);
+                                                            await fetchReports();
+                                                            await fetchHotels(); // Refresh stats
+
+                                                            if (res.data.hotelLinked) {
+                                                                alert('✅ Report validated! Stats updated for ' + report.hotel_name_input);
+                                                            } else {
+                                                                alert('⚠️ Report marked as Action Taken, BUT hotel name "' + report.hotel_name_input + '" was not found in registered hotels. Stats were NOT updated.');
+                                                            }
+                                                        } catch (e) { alert('Error updating report'); }
+                                                    }}
+                                                >
+                                                    <i className="fas fa-check-circle me-1"></i> Confirm Violation
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="danger"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await axios.put(`http://localhost:5001/api/admin/reports/${report.id}/action`, { status: 'Rejected' }, config);
+                                                            fetchReports();
+                                                        } catch (e) { alert('Error updating report'); }
+                                                    }}
+                                                >
+                                                    <i className="fas fa-times-circle me-1"></i> Reject Report
+                                                </Button>
                                             </div>
                                         )}
                                     </div>

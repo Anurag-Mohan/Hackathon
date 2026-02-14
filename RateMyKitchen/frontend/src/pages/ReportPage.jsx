@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import Navbar from '../components/Navbar';
-import CursorTrail from '../components/CursorTrail';
+
 import GlassCard from '../components/GlassCard';
 import axios from 'axios';
 
@@ -78,7 +78,7 @@ const ReportPage = () => {
 
     return (
         <>
-            <CursorTrail />
+
             <Navbar />
 
             {/* Animated Background - Red/Orange Theme */}
@@ -253,23 +253,18 @@ const ReportPage = () => {
                                                         zIndex: 1
                                                     }}></i>
                                                     <Form.Control
-                                                        type="url"
+                                                        type="text"
                                                         name="google_maps_link"
                                                         placeholder="Paste Google Maps link"
                                                         value={formData.google_maps_link}
                                                         onChange={handleChange}
-                                                        style={{
-                                                            paddingLeft: '45px',
-                                                            height: '50px',
-                                                            borderRadius: '12px',
-                                                            border: '2px solid var(--gray-200)',
-                                                            transition: 'all 0.3s ease'
-                                                        }}
-                                                        onFocus={(e) => {
-                                                            e.target.style.borderColor = '#ef4444';
-                                                            e.target.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.1)';
-                                                        }}
                                                         onBlur={(e) => {
+                                                            // Auto-fix URL on blur
+                                                            let val = e.target.value.trim();
+                                                            if (val && !val.startsWith('http')) {
+                                                                setFormData(prev => ({ ...prev, google_maps_link: `https://${val}` }));
+                                                            }
+                                                            // Restore border style
                                                             e.target.style.borderColor = 'var(--gray-200)';
                                                             e.target.style.boxShadow = 'none';
                                                         }}

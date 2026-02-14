@@ -46,4 +46,7 @@ router.get('/hotels/:hotelId/violations', statsController.getHotelViolations);
 // Download PDF Report
 router.get('/hotels/:id/report', adminController.generateReport);
 
+// Update Report Status (Admin Action)
+router.put('/reports/:id/action', adminController.updateReportStatus);
+
 module.exports = router;

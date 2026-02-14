@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import CursorTrail from '../components/CursorTrail';
+
 import GlassCard from '../components/GlassCard';
 import axios from 'axios';
 
@@ -68,7 +68,7 @@ const RegisterPage = () => {
 
     return (
         <>
-            <CursorTrail />
+
             <Navbar />
 
             {/* Animated Background */}
